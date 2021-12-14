@@ -1,5 +1,6 @@
 use graph::{
     blockchain::ChainHeadUpdateStream,
+    parking_lot::Mutex,
     prelude::{
         futures03::{self, FutureExt},
         tokio, StoreError,
@@ -152,7 +153,7 @@ impl ChainHeadUpdateListener {
     ) {
         // Process chain head updates in a dedicated task
         graph::spawn(async move {
-            let sending_to_watcher = Arc::new(AtomicBool::new(false));
+            let sending_to_watcher = Arc::new(Mutex::new(false));
             while let Some(notification) = receiver.recv().await {
                 // Create ChainHeadUpdate from JSON
                 let update: ChainHeadUpdate =
@@ -183,17 +184,18 @@ impl ChainHeadUpdateListener {
 
                 // If there are subscriptions for this network, notify them.
                 if let Some(watcher) = watchers.read(&logger).get(&update.network_name) {
+                    let sending_to_watcher_bool = *sending_to_watcher.lock();
                     // Due to a tokio bug, we must assume that the watcher can deadlock, see
                     // https://github.com/tokio-rs/tokio/issues/4246.
-                    if !sending_to_watcher.load(atomic::Ordering::SeqCst) {
+                    if !sending_to_watcher_bool {
                         let sending_to_watcher = sending_to_watcher.cheap_clone();
                         let sender = watcher.sender.cheap_clone();
                         let logger = logger.cheap_clone();
                         tokio::task::spawn_blocking(move || {
-                            sending_to_watcher.store(true, atomic::Ordering::SeqCst);
+                            *sending_to_watcher.lock() = true;
                             debug!(logger, "calling send_logged"; "number" => update.head_block_number);
                             sender.send_logged((), logger.cheap_clone()).unwrap();
-                            sending_to_watcher.store(false, atomic::Ordering::SeqCst);
+                            *sending_to_watcher.lock() = false;
                             debug!(logger, "send_logged finished");
                         });
                     } else {
