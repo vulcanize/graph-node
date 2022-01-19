@@ -697,6 +697,43 @@ impl<'s> RawQuery<'s> {
     }
 }
 
+// gql-bug-compat
+// Everything with looking up defaults here has to do with making queries
+// that use undefined variables work so that a query `{ things(first:
+// $first) { .. }}` where `$first` is not defined acts as if `$first` was
+// set to the default value 100
+trait DefaultLookup {
+    fn find(&self, name: &str) -> Option<r::Value> {
+        self.get(name)
+            .map(|value| r::Value::try_from(value.clone()))
+            .transpose()
+            .expect("our API schema does not use variables as default values")
+    }
+
+    fn get(&self, name: &str) -> Option<&q::Value>;
+}
+
+struct DirectiveDefaults<'a>(Option<&'a Vec<(String, q::Value)>>);
+
+impl<'a> DefaultLookup for DirectiveDefaults<'a> {
+    fn get(&self, name: &str) -> Option<&q::Value> {
+        self.0
+            .and_then(|values| values.iter().find(|(n, _)| n == name).map(|(_, v)| v))
+    }
+}
+
+struct FieldArgumentDefaults<'a>(&'a s::Field);
+
+impl<'a> DefaultLookup for FieldArgumentDefaults<'a> {
+    fn get(&self, name: &str) -> Option<&q::Value> {
+        self.0
+            .arguments
+            .iter()
+            .find(|arg| arg.name == name)
+            .and_then(|arg| arg.default_value.as_ref())
+    }
+}
+
 struct Transform {
     schema: Arc<ApiSchema>,
     variables: HashMap<String, r::Value>,
@@ -704,10 +741,16 @@ struct Transform {
 }
 
 impl Transform {
-    fn variable(&self, name: &str, pos: &Pos) -> Result<r::Value, QueryExecutionError> {
+    fn variable(
+        &self,
+        name: &str,
+        default: Option<r::Value>,
+        pos: &Pos,
+    ) -> Result<r::Value, QueryExecutionError> {
         self.variables
             .get(name)
             .map(|value| value.clone())
+            .or(default)
             .ok_or_else(|| QueryExecutionError::MissingVariableError(pos.clone(), name.to_string()))
     }
 
@@ -715,10 +758,15 @@ impl Transform {
     fn interpolate_arguments(
         &self,
         args: Vec<(String, q::Value)>,
+        defaults: &dyn DefaultLookup,
         pos: &Pos,
     ) -> Result<Vec<(String, r::Value)>, QueryExecutionError> {
         args.into_iter()
-            .map(|(name, val)| self.interpolate_value(val, pos).map(|val| (name, val)))
+            .map(|(name, val)| {
+                let default = defaults.find(&name);
+                self.interpolate_value(val, default, pos)
+                    .map(|val| (name, val))
+            })
             .collect()
     }
 
@@ -726,10 +774,11 @@ impl Transform {
     fn interpolate_value(
         &self,
         value: q::Value,
+        default: Option<r::Value>,
         pos: &Pos,
     ) -> Result<r::Value, QueryExecutionError> {
         match value {
-            q::Value::Variable(var) => self.variable(&var, pos),
+            q::Value::Variable(var) => self.variable(&var, default, pos),
             q::Value::Int(ref num) => Ok(r::Value::Int(
                 num.as_i64().expect("q::Value::Int contains an i64"),
             )),
@@ -741,14 +790,14 @@ impl Transform {
             q::Value::List(vals) => {
                 let vals: Vec<_> = vals
                     .into_iter()
-                    .map(|val| self.interpolate_value(val, pos))
+                    .map(|val| self.interpolate_value(val, None, pos))
                     .collect::<Result<Vec<_>, _>>()?;
                 Ok(r::Value::List(vals))
             }
             q::Value::Object(map) => {
                 let mut rmap = BTreeMap::new();
                 for (key, value) in map.into_iter() {
-                    let value = self.interpolate_value(value, pos)?;
+                    let value = self.interpolate_value(value, None, pos)?;
                     rmap.insert(key, value);
                 }
                 Ok(r::Value::object(rmap))
@@ -762,6 +811,7 @@ impl Transform {
     fn interpolate_directives(
         &self,
         dirs: Vec<q::Directive>,
+        defns: &Vec<s::Directive>,
     ) -> Result<(Vec<a::Directive>, bool), QueryExecutionError> {
         let dirs = dirs
             .into_iter()
@@ -771,7 +821,13 @@ impl Transform {
                     position,
                     arguments,
                 } = dir;
-                self.interpolate_arguments(arguments, &position)
+                let defaults = DirectiveDefaults(
+                    defns
+                        .iter()
+                        .find(|defn| defn.name == name)
+                        .map(|defn| &defn.arguments),
+                );
+                self.interpolate_arguments(arguments, &defaults, &position)
                     .map(|arguments| a::Directive {
                         name,
                         position,
@@ -882,12 +938,13 @@ impl Transform {
             )]
         })?;
 
-        let (directives, skip) = self.interpolate_directives(directives)?;
+        let (directives, skip) = self.interpolate_directives(directives, &field_type.directives)?;
         if skip {
             return Ok(None);
         }
 
-        let mut arguments = self.interpolate_arguments(arguments, &position)?;
+        let mut arguments =
+            self.interpolate_arguments(arguments, &FieldArgumentDefaults(&field_type), &position)?;
         self.coerce_argument_values(&mut arguments, parent_type, &name)?;
 
         let is_leaf_type = self.schema.document().is_leaf_type(&field_type.field_type);
@@ -1003,7 +1060,7 @@ impl Transform {
         ty: ObjectOrInterface,
         newset: &mut a::SelectionSet,
     ) -> Result<(), Vec<QueryExecutionError>> {
-        let (directives, skip) = self.interpolate_directives(directives)?;
+        let (directives, skip) = self.interpolate_directives(directives, &vec![])?;
         // Field names in fragment spreads refer to this type, which will
         // usually be different from the outer type
         let ty = match frag_cond {
