@@ -1489,7 +1489,7 @@ fn leaf_selection_mismatch() {
 
 // see: graphql-bug-compat
 #[test]
-fn missing_var_uses_default() {
+fn missing_variable() {
     run_test_sequentially(|store| async move {
         let deployment = setup(store.as_ref());
         let result = execute_query_document(
@@ -1510,6 +1510,17 @@ fn missing_var_uses_default() {
                 object! { id: "m4" },
             ]
         };
+        let data = extract_data!(result).unwrap();
+        assert_eq!(exp, data);
+
+        let result = execute_query_document(
+            &deployment.hash,
+            // '$where' is not defined but nullable, ignore the argument
+            graphql_parser::parse_query("query { musicians(where: $where) { id } }")
+                .expect("invalid test query")
+                .into_static(),
+        )
+        .await;
         let data = extract_data!(result).unwrap();
         assert_eq!(exp, data);
     })
