@@ -118,6 +118,18 @@ impl EntityCache {
         key: &EntityKey,
         scope: GetScope,
     ) -> Result<Option<Entity>, s::QueryExecutionError> {
+        crate::prelude::lazy_static! {
+            static ref UNISWAP_WRITEONLY: Vec<EntityType> = {
+                crate::env::env_var::<_, String>("UNISWAP_WRITEONLY", "Transaction,Mint,Burn,Swap".to_string()).split(",").map(|s| EntityType::new(s.to_owned())).collect()
+            };
+        }
+
+        let scope = if UNISWAP_WRITEONLY.contains(&key.entity_type) {
+            GetScope::InBlock
+        } else {
+            scope
+        };
+
         // Get the current entity, apply any updates from `updates`, then
         // from `handler_updates`.
         let mut entity = match scope {
