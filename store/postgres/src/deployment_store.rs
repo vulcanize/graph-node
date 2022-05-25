@@ -4,7 +4,7 @@ use diesel::connection::SimpleConnection;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, PooledConnection};
-use graph::components::store::{EntityType, StoredDynamicDataSource};
+use graph::components::store::{EntityRef, EntityType, StoredDynamicDataSource};
 use graph::data::subgraph::status;
 use graph::prelude::{
     tokio, CancelHandle, CancelToken, CancelableError, EntityOperation, PoolWaitStats,
@@ -27,9 +27,9 @@ use graph::constraint_violation;
 use graph::data::subgraph::schema::{DeploymentCreate, SubgraphError, POI_OBJECT};
 use graph::prelude::{
     anyhow, debug, info, o, warn, web3, ApiSchema, AttributeNames, BlockNumber, BlockPtr,
-    CheapClone, DeploymentHash, DeploymentState, Entity, EntityKey, EntityModification,
-    EntityQuery, Error, Logger, QueryExecutionError, Schema, StopwatchMetrics, StoreError,
-    StoreEvent, UnfailOutcome, Value, ENV_VARS,
+    CheapClone, DeploymentHash, DeploymentState, Entity, EntityModification, EntityQuery, Error,
+    Logger, QueryExecutionError, Schema, StopwatchMetrics, StoreError, StoreEvent, UnfailOutcome,
+    Value, ENV_VARS,
 };
 use graph_graphql::prelude::api_schema;
 use web3::types::Address;
@@ -245,10 +245,8 @@ impl DeploymentStore {
         &self,
         conn: &PgConnection,
         layout: &Layout,
-        key: &EntityKey,
+        key: &EntityRef,
     ) -> Result<(), StoreError> {
-        assert_eq!(&key.subgraph_id, &layout.site.deployment);
-
         // Collect all types that share an interface implementation with this
         // entity type, and make sure there are no conflicting IDs.
         //
@@ -279,7 +277,7 @@ impl DeploymentStore {
             {
                 return Err(StoreError::ConflictingId(
                     entity_type,
-                    key.entity_id.clone(),
+                    key.entity_id.to_string(),
                     conflicting_entity,
                 ));
             }
@@ -356,7 +354,7 @@ impl DeploymentStore {
     fn insert_entities<'a>(
         &'a self,
         entity_type: &'a EntityType,
-        data: &'a mut [(&'a EntityKey, Cow<'a, Entity>)],
+        data: &'a mut [(&'a EntityRef, Cow<'a, Entity>)],
         conn: &PgConnection,
         layout: &'a Layout,
         ptr: &BlockPtr,
@@ -376,7 +374,7 @@ impl DeploymentStore {
     fn overwrite_entities<'a>(
         &'a self,
         entity_type: &'a EntityType,
-        data: &'a mut [(&'a EntityKey, Cow<'a, Entity>)],
+        data: &'a mut [(&'a EntityRef, Cow<'a, Entity>)],
         conn: &PgConnection,
         layout: &'a Layout,
         ptr: &BlockPtr,
@@ -903,7 +901,7 @@ impl DeploymentStore {
     pub(crate) fn get(
         &self,
         site: Arc<Site>,
-        key: &EntityKey,
+        key: &EntityRef,
         block: BlockNumber,
     ) -> Result<Option<Entity>, StoreError> {
         let conn = self.get_conn()?;
@@ -961,18 +959,6 @@ impl DeploymentStore {
         data_sources: &[StoredDynamicDataSource],
         deterministic_errors: &[SubgraphError],
     ) -> Result<StoreEvent, StoreError> {
-        // All operations should apply only to data or metadata for this subgraph
-        if mods
-            .iter()
-            .map(|modification| modification.entity_key())
-            .any(|key| key.subgraph_id != site.deployment)
-        {
-            panic!(
-                "transact_block_operations must affect only entities \
-                 in the subgraph or in the subgraph of subgraphs"
-            );
-        }
-
         let conn = {
             let _section = stopwatch.start_section("transact_blocks_get_conn");
             self.get_conn()?
