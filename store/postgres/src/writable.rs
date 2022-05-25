@@ -3,6 +3,7 @@ use std::sync::Mutex;
 use std::time::Duration;
 use std::{collections::BTreeMap, sync::Arc};
 
+use graph::components::store::EntityRef;
 use graph::data::subgraph::schema;
 use graph::env::env_var;
 use graph::prelude::{
@@ -15,8 +16,8 @@ use graph::{
     components::store::{self, EntityType, WritableStore as WritableStoreTrait},
     data::subgraph::schema::SubgraphError,
     prelude::{
-        BlockPtr, DeploymentHash, EntityKey, EntityModification, Error, Logger, StopwatchMetrics,
-        StoreError, StoreEvent, UnfailOutcome, ENV_VARS,
+        BlockPtr, DeploymentHash, EntityModification, Error, Logger, StopwatchMetrics, StoreError,
+        StoreEvent, UnfailOutcome, ENV_VARS,
     },
     slog::{error, warn},
     util::backoff::ExponentialBackoff,
@@ -240,7 +241,7 @@ impl SyncStore {
         .await
     }
 
-    fn get(&self, key: &EntityKey, block: BlockNumber) -> Result<Option<Entity>, StoreError> {
+    fn get(&self, key: &EntityRef, block: BlockNumber) -> Result<Option<Entity>, StoreError> {
         self.retry("get", || {
             self.writable.get(self.site.cheap_clone(), key, block)
         })
@@ -255,14 +256,6 @@ impl SyncStore {
         data_sources: &[StoredDynamicDataSource],
         deterministic_errors: &[SubgraphError],
     ) -> Result<(), StoreError> {
-        fn same_subgraph(mods: &[EntityModification], id: &DeploymentHash) -> bool {
-            mods.iter().all(|md| &md.entity_key().subgraph_id == id)
-        }
-
-        assert!(
-            same_subgraph(mods, &self.site.deployment),
-            "can only transact operations within one shard"
-        );
         self.retry("transact_block_operations", move || {
             let event = self.writable.transact_block_operations(
                 self.site.clone(),
@@ -623,7 +616,7 @@ impl Queue {
 
     /// Get the entity for `key` if it exists by looking at both the queue
     /// and the store
-    fn get(&self, key: &EntityKey) -> Result<Option<Entity>, StoreError> {
+    fn get(&self, key: &EntityRef) -> Result<Option<Entity>, StoreError> {
         enum Op {
             Write(Entity),
             Remove,
@@ -645,7 +638,7 @@ impl Queue {
                 } => {
                     if tracker.visible(block_ptr) {
                         mods.iter()
-                            .find(|emod| emod.entity_key() == key)
+                            .find(|emod| emod.entity_ref() == key)
                             .map(|emod| match emod {
                                 EntityModification::Insert { data, .. }
                                 | EntityModification::Overwrite { data, .. } => {
@@ -687,10 +680,10 @@ impl Queue {
                     } => {
                         if tracker.visible(block_ptr) {
                             for emod in mods {
-                                let key = emod.entity_key();
+                                let key = emod.entity_ref();
                                 if let Some(ids) = ids_for_type.get_mut(&key.entity_type) {
                                     if let Some(idx) =
-                                        ids.iter().position(|id| *id == &key.entity_id)
+                                        ids.iter().position(|id| *id == key.entity_id.as_str())
                                     {
                                         // We are looking for the entity
                                         // underlying this modification. Add
@@ -858,7 +851,7 @@ impl Writer {
         }
     }
 
-    fn get(&self, key: &EntityKey) -> Result<Option<Entity>, StoreError> {
+    fn get(&self, key: &EntityRef) -> Result<Option<Entity>, StoreError> {
         match self {
             Writer::Sync(store) => store.get(key, BLOCK_NUMBER_MAX),
             Writer::Async(queue) => queue.get(key),
@@ -991,7 +984,7 @@ impl WritableStoreTrait for WritableStore {
         self.store.supports_proof_of_indexing().await
     }
 
-    fn get(&self, key: &EntityKey) -> Result<Option<Entity>, StoreError> {
+    fn get(&self, key: &EntityRef) -> Result<Option<Entity>, StoreError> {
         self.writer.get(key)
     }
 

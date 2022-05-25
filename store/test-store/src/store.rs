@@ -8,7 +8,7 @@ use graph::prelude::{QueryStoreManager as _, SubgraphStore as _, *};
 use graph::semver::Version;
 use graph::{
     blockchain::ChainIdentifier, components::store::DeploymentLocator,
-    components::store::EntityType, components::store::StatusStore,
+    components::store::EntityRef, components::store::EntityType, components::store::StatusStore,
     components::store::StoredDynamicDataSource, data::subgraph::status, prelude::NodeId,
 };
 use graph_graphql::prelude::{
@@ -335,10 +335,9 @@ pub async fn insert_entities(
     let insert_ops = entities
         .into_iter()
         .map(|(entity_type, data)| EntityOperation::Set {
-            key: EntityKey {
-                subgraph_id: deployment.hash.clone(),
+            key: EntityRef {
                 entity_type: entity_type.to_owned(),
-                entity_id: data.get("id").unwrap().clone().as_string().unwrap(),
+                entity_id: data.get("id").unwrap().clone().as_string().unwrap().into(),
             },
             data,
         });
