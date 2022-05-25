@@ -5,8 +5,6 @@ mod traits;
 pub use cache::{CachedEthereumCall, EntityCache, ModificationsAndCache};
 pub use err::StoreError;
 use itertools::Itertools;
-use stable_hash::{FieldAddress, StableHash};
-use stable_hash_legacy::SequenceNumber;
 pub use traits::*;
 
 use futures::stream::poll_fn;
@@ -82,8 +80,6 @@ impl From<&str> for EntityType {
 
 impl CheapClone for EntityType {}
 
-// Note: Do not modify fields without making a backward compatible change to
-// the StableHash impl (below)
 /// Key by which an individual entity in the store can be accessed.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EntityKey {
@@ -95,47 +91,6 @@ pub struct EntityKey {
 
     /// ID of the individual entity.
     pub entity_id: String,
-}
-
-impl stable_hash_legacy::StableHash for EntityKey {
-    fn stable_hash<H: stable_hash_legacy::StableHasher>(
-        &self,
-        mut sequence_number: H::Seq,
-        state: &mut H,
-    ) {
-        let Self {
-            subgraph_id,
-            entity_type,
-            entity_id,
-        } = self;
-
-        stable_hash_legacy::StableHash::stable_hash(
-            subgraph_id,
-            sequence_number.next_child(),
-            state,
-        );
-        stable_hash_legacy::StableHash::stable_hash(
-            &entity_type.as_str(),
-            sequence_number.next_child(),
-            state,
-        );
-        stable_hash_legacy::StableHash::stable_hash(entity_id, sequence_number.next_child(), state);
-    }
-}
-
-impl StableHash for EntityKey {
-    fn stable_hash<H: stable_hash::StableHasher>(&self, field_address: H::Addr, state: &mut H) {
-        let Self {
-            subgraph_id,
-            entity_type,
-            entity_id,
-        } = self;
-
-        subgraph_id.stable_hash(field_address.child(0), state);
-
-        stable_hash::StableHash::stable_hash(&entity_type.as_str(), field_address.child(1), state);
-        stable_hash::StableHash::stable_hash(entity_id, field_address.child(2), state);
-    }
 }
 
 impl EntityKey {
@@ -167,25 +122,6 @@ impl EntityRef {
             entity_id: entity_id.into(),
         }
     }
-}
-
-#[test]
-fn key_stable_hash() {
-    use stable_hash_legacy::crypto::SetHasher;
-    use stable_hash_legacy::utils::stable_hash;
-
-    #[track_caller]
-    fn hashes_to(key: &EntityKey, exp: &str) {
-        let hash = hex::encode(stable_hash::<SetHasher, _>(&key));
-        assert_eq!(exp, hash.as_str());
-    }
-
-    let id = DeploymentHash::new("QmP9MRvVzwHxr3sGvujihbvJzcTz2LYLMfi5DyihBg6VUd").unwrap();
-    let key = EntityKey::data(id.clone(), "Account".to_string(), "0xdeadbeef".to_string());
-    hashes_to(
-        &key,
-        "905b57035d6f98cff8281e7b055e10570a2bd31190507341c6716af2d3c1ad98",
-    );
 }
 
 /// Supported types of store filters.
