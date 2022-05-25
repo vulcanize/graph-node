@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use crate::blockchain::BlockPtr;
 use crate::components::store::{
-    self as s, Entity, EntityOp, EntityOperation, EntityRef, EntityType,
+    self as s, Entity, EntityKey, EntityOp, EntityOperation, EntityType,
 };
 use crate::prelude::ENV_VARS;
 use crate::util::lfu_cache::LfuCache;
@@ -20,13 +20,13 @@ use crate::util::lfu_cache::LfuCache;
 pub struct EntityCache {
     /// The state of entities in the store. An entry of `None`
     /// means that the entity is not present in the store
-    current: LfuCache<EntityRef, Option<Entity>>,
+    current: LfuCache<EntityKey, Option<Entity>>,
 
     /// The accumulated changes to an entity.
-    updates: HashMap<EntityRef, EntityOp>,
+    updates: HashMap<EntityKey, EntityOp>,
 
     // Updates for a currently executing handler.
-    handler_updates: HashMap<EntityRef, EntityOp>,
+    handler_updates: HashMap<EntityKey, EntityOp>,
 
     // Marks whether updates should go in `handler_updates`.
     in_handler: bool,
@@ -49,7 +49,7 @@ impl Debug for EntityCache {
 pub struct ModificationsAndCache {
     pub modifications: Vec<s::EntityModification>,
     pub data_sources: Vec<s::StoredDynamicDataSource>,
-    pub entity_lfu_cache: LfuCache<EntityRef, Option<Entity>>,
+    pub entity_lfu_cache: LfuCache<EntityKey, Option<Entity>>,
 }
 
 impl EntityCache {
@@ -66,7 +66,7 @@ impl EntityCache {
 
     pub fn with_current(
         store: Arc<dyn s::WritableStore>,
-        current: LfuCache<EntityRef, Option<Entity>>,
+        current: LfuCache<EntityKey, Option<Entity>>,
     ) -> EntityCache {
         EntityCache {
             current,
@@ -100,7 +100,7 @@ impl EntityCache {
         self.handler_updates.clear();
     }
 
-    pub fn get(&mut self, eref: &EntityRef) -> Result<Option<Entity>, s::QueryExecutionError> {
+    pub fn get(&mut self, eref: &EntityKey) -> Result<Option<Entity>, s::QueryExecutionError> {
         // Get the current entity, apply any updates from `updates`, then
         // from `handler_updates`.
         let mut entity = self.current.get_entity(&*self.store, eref)?;
@@ -113,7 +113,7 @@ impl EntityCache {
         Ok(entity)
     }
 
-    pub fn remove(&mut self, key: EntityRef) {
+    pub fn remove(&mut self, key: EntityKey) {
         self.entity_op(key, EntityOp::Remove);
     }
 
@@ -122,8 +122,8 @@ impl EntityCache {
     /// with existing data. The entity will be validated against the
     /// subgraph schema, and any errors will result in an `Err` being
     /// returned.
-    pub fn set(&mut self, key: EntityRef, mut entity: Entity) -> Result<(), anyhow::Error> {
-        fn check_id(key: &EntityRef, prev_id: &str) -> Result<(), anyhow::Error> {
+    pub fn set(&mut self, key: EntityKey, mut entity: Entity) -> Result<(), anyhow::Error> {
+        fn check_id(key: &EntityKey, prev_id: &str) -> Result<(), anyhow::Error> {
             if prev_id != key.entity_id.as_str() {
                 return Err(anyhow!(
                     "Value of {} attribute 'id' conflicts with ID passed to `store.set()`: \
@@ -193,7 +193,7 @@ impl EntityCache {
             .push(data_source.as_stored_dynamic_data_source());
     }
 
-    fn entity_op(&mut self, key: EntityRef, op: EntityOp) {
+    fn entity_op(&mut self, key: EntityKey, op: EntityOp) {
         use std::collections::hash_map::Entry;
         let updates = match self.in_handler {
             true => &mut self.handler_updates,
@@ -252,7 +252,7 @@ impl EntityCache {
 
         for (entity_type, entities) in self.store.get_many(missing_by_type)? {
             for entity in entities {
-                let key = EntityRef {
+                let key = EntityKey {
                     entity_type: entity_type.clone(),
                     entity_id: entity.id().unwrap().into(),
                 };
@@ -316,12 +316,12 @@ impl EntityCache {
     }
 }
 
-impl LfuCache<EntityRef, Option<Entity>> {
+impl LfuCache<EntityKey, Option<Entity>> {
     // Helper for cached lookup of an entity.
     fn get_entity(
         &mut self,
         store: &(impl s::WritableStore + ?Sized),
-        key: &EntityRef,
+        key: &EntityKey,
     ) -> Result<Option<Entity>, s::QueryExecutionError> {
         match self.get(key) {
             None => {

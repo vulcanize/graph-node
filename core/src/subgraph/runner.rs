@@ -9,7 +9,7 @@ use atomic_refcell::AtomicRefCell;
 use fail::fail_point;
 use graph::blockchain::block_stream::{BlockStreamEvent, BlockWithTriggers};
 use graph::blockchain::{Block, Blockchain, DataSource, TriggerFilter as _};
-use graph::components::store::EntityRef;
+use graph::components::store::EntityKey;
 use graph::components::{
     store::ModificationsAndCache,
     subgraph::{CausalityRegion, MappingError, ProofOfIndexing, SharedProofOfIndexing},
@@ -861,7 +861,7 @@ async fn update_proof_of_indexing(
 
     for (causality_region, stream) in proof_of_indexing.drain() {
         // Create the special POI entity key specific to this causality_region
-        let entity_key = EntityRef {
+        let entity_key = EntityKey {
             entity_type: POI_OBJECT.to_owned(),
             entity_id: causality_region.into(),
         };
