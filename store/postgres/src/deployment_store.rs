@@ -4,7 +4,7 @@ use diesel::connection::SimpleConnection;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, PooledConnection};
-use graph::components::store::{EntityRef, EntityType, StoredDynamicDataSource};
+use graph::components::store::{EntityKey, EntityType, StoredDynamicDataSource};
 use graph::data::subgraph::status;
 use graph::prelude::{
     tokio, CancelHandle, CancelToken, CancelableError, EntityOperation, PoolWaitStats,
@@ -245,7 +245,7 @@ impl DeploymentStore {
         &self,
         conn: &PgConnection,
         layout: &Layout,
-        key: &EntityRef,
+        key: &EntityKey,
     ) -> Result<(), StoreError> {
         // Collect all types that share an interface implementation with this
         // entity type, and make sure there are no conflicting IDs.
@@ -354,7 +354,7 @@ impl DeploymentStore {
     fn insert_entities<'a>(
         &'a self,
         entity_type: &'a EntityType,
-        data: &'a mut [(&'a EntityRef, Cow<'a, Entity>)],
+        data: &'a mut [(&'a EntityKey, Cow<'a, Entity>)],
         conn: &PgConnection,
         layout: &'a Layout,
         ptr: &BlockPtr,
@@ -374,7 +374,7 @@ impl DeploymentStore {
     fn overwrite_entities<'a>(
         &'a self,
         entity_type: &'a EntityType,
-        data: &'a mut [(&'a EntityRef, Cow<'a, Entity>)],
+        data: &'a mut [(&'a EntityKey, Cow<'a, Entity>)],
         conn: &PgConnection,
         layout: &'a Layout,
         ptr: &BlockPtr,
@@ -901,7 +901,7 @@ impl DeploymentStore {
     pub(crate) fn get(
         &self,
         site: Arc<Site>,
-        key: &EntityRef,
+        key: &EntityKey,
         block: BlockNumber,
     ) -> Result<Option<Entity>, StoreError> {
         let conn = self.get_conn()?;
