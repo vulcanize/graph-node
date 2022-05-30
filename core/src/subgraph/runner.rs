@@ -3,7 +3,6 @@ use crate::subgraph::error::BlockProcessingError;
 use crate::subgraph::inputs::IndexingInputs;
 use crate::subgraph::state::IndexingState;
 use crate::subgraph::stream::new_block_stream;
-use atomic_refcell::AtomicRefCell;
 use graph::blockchain::block_stream::{BlockStreamEvent, BlockWithTriggers, FirehoseCursor};
 use graph::blockchain::{Block, Blockchain, TriggerFilter as _};
 use graph::components::store::{
@@ -166,14 +165,7 @@ where
             );
         }
 
-        let proof_of_indexing = if self.inputs.store.supports_proof_of_indexing().await? {
-            Some(Arc::new(AtomicRefCell::new(ProofOfIndexing::new(
-                block_ptr.number,
-                self.inputs.poi_version,
-            ))))
-        } else {
-            None
-        };
+        let proof_of_indexing = None;
 
         // Causality region for onchain triggers.
         let causality_region = CausalityRegion::from_network(&self.inputs.network);
