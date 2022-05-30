@@ -5,7 +5,6 @@ use crate::subgraph::metrics::RunnerMetrics;
 use crate::subgraph::state::IndexingState;
 use crate::subgraph::stream::new_block_stream;
 use crate::subgraph::SubgraphInstance;
-use atomic_refcell::AtomicRefCell;
 use fail::fail_point;
 use graph::blockchain::block_stream::{BlockStreamEvent, BlockWithTriggers};
 use graph::blockchain::{Block, Blockchain, DataSource, TriggerFilter as _};
@@ -157,13 +156,7 @@ where
             );
         }
 
-        let proof_of_indexing = if self.inputs.store.supports_proof_of_indexing().await? {
-            Some(Arc::new(AtomicRefCell::new(ProofOfIndexing::new(
-                block_ptr.number,
-            ))))
-        } else {
-            None
-        };
+        let proof_of_indexing = None;
 
         // There are currently no other causality regions since offchain data is not supported.
         let causality_region = CausalityRegion::from_network(self.ctx.instance.network());
