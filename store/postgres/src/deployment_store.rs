@@ -1003,6 +1003,10 @@ impl DeploymentStore {
 
             // Make the changes
             let layout = self.layout(&conn, site.clone())?;
+
+            //  see also: deployment-lock-for-update
+            deployment::lock(&conn, &site)?;
+
             let section = stopwatch.start_section("apply_entity_modifications");
             let count = self.apply_entity_modifications(
                 &conn,
@@ -1055,6 +1059,9 @@ impl DeploymentStore {
         firehose_cursor: &FirehoseCursor,
     ) -> Result<StoreEvent, StoreError> {
         let event = conn.transaction(|| -> Result<_, StoreError> {
+            //  see also: deployment-lock-for-update
+            deployment::lock(conn, &site)?;
+
             // Don't revert past a graft point
             let info = self.subgraph_info_with_conn(conn, site.as_ref())?;
             if let Some(graft_block) = info.graft_block {
