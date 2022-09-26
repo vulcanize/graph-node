@@ -13,6 +13,7 @@ use crate::DataSource;
 pub struct NodeCapabilities {
     pub archive: bool,
     pub traces: bool,
+    pub call_only: bool,
 }
 
 // Take all NodeCapabilities fields into account when ordering
@@ -20,6 +21,10 @@ pub struct NodeCapabilities {
 // if all of its fields are equal or greater than the other
 impl Ord for NodeCapabilities {
     fn cmp(&self, other: &Self) -> Ordering {
+        if self.call_only && !other.call_only {
+            return Ordering::Less;
+        }
+
         match (
             self.archive.cmp(&other.archive),
             self.traces.cmp(&other.traces),
@@ -48,13 +53,18 @@ impl FromStr for NodeCapabilities {
         Ok(NodeCapabilities {
             archive: capabilities.contains("archive"),
             traces: capabilities.contains("traces"),
+            call_only: capabilities.contains("call_only"),
         })
     }
 }
 
 impl fmt::Display for NodeCapabilities {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let NodeCapabilities { archive, traces } = self;
+        let NodeCapabilities {
+            archive,
+            traces,
+            call_only,
+        } = self;
 
         let mut capabilities = vec![];
         if *archive {
@@ -62,6 +72,9 @@ impl fmt::Display for NodeCapabilities {
         }
         if *traces {
             capabilities.push("traces");
+        }
+        if *call_only {
+            capabilities.push("call_only");
         }
 
         f.write_str(&capabilities.join(", "))
@@ -81,6 +94,7 @@ impl graph::blockchain::NodeCapabilities<crate::Chain> for NodeCapabilities {
             traces: data_sources.into_iter().any(|ds| {
                 ds.mapping.has_call_handler() || ds.mapping.has_block_handler_with_call_filter()
             }),
+            call_only: false,
         }
     }
 }
