@@ -45,10 +45,10 @@ impl blockchain::RuntimeAdapter<Chain> for RuntimeAdapter {
         let call_cache = self.call_cache.cheap_clone();
         let eth_adapter = self
             .eth_adapters
-            .cheapest_with(&NodeCapabilities {
+            .cheapest_with_for_call(&NodeCapabilities {
                 archive: ds.mapping.requires_archive()?,
                 traces: false,
-                call_only: true,
+                call_only: false,
             })?
             .cheap_clone();
 

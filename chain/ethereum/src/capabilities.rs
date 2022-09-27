@@ -22,6 +22,10 @@ pub struct NodeCapabilities {
 impl Ord for NodeCapabilities {
     fn cmp(&self, other: &Self) -> Ordering {
         if self.call_only && !other.call_only {
+            return Ordering::Greater;
+        }
+
+        if !self.call_only && other.call_only {
             return Ordering::Less;
         }
 
