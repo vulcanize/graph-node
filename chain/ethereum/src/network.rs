@@ -77,7 +77,7 @@ impl EthereumNetworkAdapters {
             cheapest_sufficient_capability = self
                 .adapters
                 .iter()
-                .filter(|adapter| adapter.capabilities.call_only)
+                .filter(|adapter| !adapter.capabilities.call_only)
                 .find(|adapter| &adapter.capabilities >= required_capabilities)
                 .map(|adapter| &adapter.capabilities);
         }
@@ -94,7 +94,7 @@ impl EthereumNetworkAdapters {
         required_capabilities: &NodeCapabilities,
     ) -> Result<Arc<EthereumAdapter>, Error> {
         // Select randomly from the cheapest adapters that have sufficent capabilities.
-        self.all_cheapest_with(required_capabilities)
+        self.all_cheapest_with_for_call(required_capabilities)
             .choose(&mut rand::thread_rng())
             .with_context(|| {
                 anyhow!(
