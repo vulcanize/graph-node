@@ -471,10 +471,12 @@ mod test {
         let traces = NodeCapabilities {
             archive: false,
             traces: true,
+            call_only: false,
         };
         let archive = NodeCapabilities {
             archive: true,
             traces: false,
+            call_only: false,
         };
         let has_mainnet_with_traces = ethereum_networks
             .adapter_with_capabilities("mainnet".to_string(), &traces)
