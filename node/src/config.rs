@@ -623,7 +623,6 @@ impl Web3Provider {
         NodeCapabilities {
             archive: self.features.contains("archive"),
             traces: self.features.contains("traces"),
-            call_only: self.features.contains("call_only"),
         }
     }
 

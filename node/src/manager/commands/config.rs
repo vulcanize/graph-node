@@ -109,13 +109,12 @@ pub async fn provider(
         let mut caps = NodeCapabilities {
             archive: false,
             traces: false,
-            call_only: false,
         };
+
         for feature in features.split(',') {
             match feature {
                 "archive" => caps.archive = true,
                 "traces" => caps.traces = true,
-                "call_only" => caps.call_only = true,
                 _ => bail!("unknown feature {}", feature),
             }
         }

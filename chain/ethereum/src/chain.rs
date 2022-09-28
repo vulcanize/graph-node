@@ -4,7 +4,7 @@ use graph::blockchain::{BlockchainKind, TriggersAdapterSelector};
 use graph::data::subgraph::UnifiedMappingApiVersion;
 use graph::firehose::{FirehoseEndpoint, FirehoseEndpoints, ForkStep};
 use graph::prelude::{EthereumBlock, EthereumCallCache, LightEthereumBlock, LightEthereumBlockExt};
-use graph::slog::{debug, trace};
+use graph::slog::debug;
 use graph::{
     blockchain::{
         block_stream::{
@@ -148,11 +148,9 @@ impl TriggersAdapterSelector<Chain> for EthereumAdapterSelector {
             .subgraph_logger(&loc)
             .new(o!("component" => "BlockStream"));
 
-        trace!(logger, "Removing 'call_only' capability requirement for adapter as we are looking for one that can serve non-call requests");
         let mut adjusted_capabilities = crate::capabilities::NodeCapabilities {
             archive: capabilities.archive,
             traces: capabilities.traces,
-            call_only: false,
         };
 
         if capabilities.traces && self.firehose_endpoints.len() > 0 {

@@ -23,6 +23,12 @@ pub struct EthereumNetworkAdapter {
     limit: usize,
 }
 
+impl EthereumNetworkAdapter {
+    pub fn call_only(&self) -> bool {
+        self.adapter.call_only
+    }
+}
+
 #[derive(Clone)]
 pub struct EthereumNetworkAdapters {
     pub adapters: Vec<EthereumNetworkAdapter>,
@@ -36,7 +42,7 @@ impl EthereumNetworkAdapters {
         let cheapest_sufficient_capability = self
             .adapters
             .iter()
-            .filter(|adapter| !adapter.capabilities.call_only)
+            .filter(|adapter| !adapter.call_only())
             .find(|adapter| &adapter.capabilities >= required_capabilities)
             .map(|adapter| &adapter.capabilities);
 
@@ -69,7 +75,7 @@ impl EthereumNetworkAdapters {
         let mut cheapest_sufficient_capability = self
             .adapters
             .iter()
-            .filter(|adapter| adapter.capabilities.call_only)
+            .filter(|adapter| adapter.call_only())
             .find(|adapter| &adapter.capabilities >= required_capabilities)
             .map(|adapter| &adapter.capabilities);
 
@@ -77,7 +83,7 @@ impl EthereumNetworkAdapters {
             cheapest_sufficient_capability = self
                 .adapters
                 .iter()
-                .filter(|adapter| !adapter.capabilities.call_only)
+                .filter(|adapter| !adapter.call_only())
                 .find(|adapter| &adapter.capabilities >= required_capabilities)
                 .map(|adapter| &adapter.capabilities);
         }
@@ -109,7 +115,7 @@ impl EthereumNetworkAdapters {
         // struct is instantiated so they do not need to be sorted here
         self.adapters
             .iter()
-            .filter(|adapter| !adapter.capabilities.call_only)
+            .filter(|adapter| !adapter.call_only())
             .next()
             .map(|ethereum_network_adapter| ethereum_network_adapter.adapter.clone())
     }
@@ -212,44 +218,19 @@ mod tests {
         let archive = NodeCapabilities {
             archive: true,
             traces: false,
-            call_only: false,
         };
         let traces = NodeCapabilities {
             archive: false,
             traces: true,
-            call_only: false,
         };
         let archive_traces = NodeCapabilities {
             archive: true,
             traces: true,
-            call_only: false,
         };
         let full = NodeCapabilities {
             archive: false,
             traces: false,
-            call_only: false,
         };
-
-        // let archive_call_only = NodeCapabilities {
-        //     archive: true,
-        //     traces: false,
-        //     call_only: true,
-        // };
-        // let traces_call_only = NodeCapabilities {
-        //     archive: false,
-        //     traces: true,
-        //     call_only: true,
-        // };
-        // let archive_traces_call_only = NodeCapabilities {
-        //     archive: true,
-        //     traces: true,
-        //     call_only: true,
-        // };
-        // let full_call_only = NodeCapabilities {
-        //     archive: false,
-        //     traces: false,
-        //     call_only: true,
-        // };
 
         // Test all real combinations of capability comparisons
         assert_eq!(false, &full >= &archive);
@@ -281,102 +262,5 @@ mod tests {
         assert_eq!(false, &traces >= &archive_traces);
         assert_eq!(true, &traces >= &full);
         assert_eq!(true, &traces >= &traces);
-
-        // // We check here that when `adapter.capabilities { ..., call_only: true }` and `required_capabilities { ..., call_only: false }`,
-        // // the comparison `&adapter.capabilities >= required_capabilities` is always `false` so that a `call_only` adapter is never picked
-        // // up.
-        // assert_eq!(true, &full_call_only >= &archive);
-        // assert_eq!(true, &full_call_only >= &traces);
-        // assert_eq!(true, &full_call_only >= &archive_traces);
-        // assert_eq!(true, &full_call_only >= &full);
-        // assert_eq!(true, &full_call_only >= &traces);
-
-        // assert_eq!(false, &archive_call_only >= &archive);
-        // assert_eq!(false, &archive_call_only >= &traces);
-        // assert_eq!(false, &archive_call_only >= &archive_traces);
-        // assert_eq!(false, &archive_call_only >= &full);
-        // assert_eq!(false, &archive_call_only >= &traces);
-
-        // assert_eq!(false, &traces_call_only >= &archive);
-        // assert_eq!(false, &traces_call_only >= &traces);
-        // assert_eq!(false, &traces_call_only >= &archive_traces);
-        // assert_eq!(false, &traces_call_only >= &full);
-        // assert_eq!(false, &traces_call_only >= &traces);
-
-        // assert_eq!(false, &archive_traces_call_only >= &archive);
-        // assert_eq!(false, &archive_traces_call_only >= &traces);
-        // assert_eq!(false, &archive_traces_call_only >= &archive_traces);
-        // assert_eq!(false, &archive_traces_call_only >= &full);
-        // assert_eq!(false, &archive_traces_call_only >= &traces);
-
-        // assert_eq!(false, &traces_call_only >= &archive);
-        // assert_eq!(false, &traces_call_only >= &traces);
-        // assert_eq!(false, &traces_call_only >= &archive_traces);
-        // assert_eq!(false, &traces_call_only >= &full);
-        // assert_eq!(false, &traces_call_only >= &traces);
-
-        // // We check here that when `adapter.capabilities { ..., call_only: false }` and `required_capabilities { ..., call_only: true }`,
-        // // the comparison `&adapter.capabilities >= required_capabilities` is the same as before since we still want a non-call only
-        // // provider to be picked for `call_only` capability.
-        // assert_eq!(false, &full >= &archive_call_only);
-        // assert_eq!(false, &full >= &traces_call_only);
-        // assert_eq!(false, &full >= &archive_traces_call_only);
-        // assert_eq!(true, &full >= &full_call_only);
-        // assert_eq!(false, &full >= &traces_call_only);
-
-        // assert_eq!(true, &archive >= &archive_call_only);
-        // assert_eq!(false, &archive >= &traces_call_only);
-        // assert_eq!(false, &archive >= &archive_traces_call_only);
-        // assert_eq!(true, &archive >= &full_call_only);
-        // assert_eq!(false, &archive >= &traces_call_only);
-
-        // assert_eq!(false, &traces >= &archive_call_only);
-        // assert_eq!(true, &traces >= &traces_call_only);
-        // assert_eq!(false, &traces >= &archive_traces_call_only);
-        // assert_eq!(true, &traces >= &full_call_only);
-        // assert_eq!(true, &traces >= &traces_call_only);
-
-        // assert_eq!(true, &archive_traces >= &archive_call_only);
-        // assert_eq!(true, &archive_traces >= &traces_call_only);
-        // assert_eq!(true, &archive_traces >= &archive_traces_call_only);
-        // assert_eq!(true, &archive_traces >= &full_call_only);
-        // assert_eq!(true, &archive_traces >= &traces_call_only);
-
-        // assert_eq!(false, &traces >= &archive_call_only);
-        // assert_eq!(true, &traces >= &traces_call_only);
-        // assert_eq!(false, &traces >= &archive_traces_call_only);
-        // assert_eq!(true, &traces >= &full_call_only);
-        // assert_eq!(true, &traces >= &traces_call_only);
-
-        // // When both are `call_only`, the older behavior matters
-        // assert_eq!(false, &full_call_only >= &archive_call_only);
-        // assert_eq!(false, &full_call_only >= &traces_call_only);
-        // assert_eq!(false, &full_call_only >= &archive_traces_call_only);
-        // assert_eq!(true, &full_call_only >= &full_call_only);
-        // assert_eq!(false, &full_call_only >= &traces_call_only);
-
-        // assert_eq!(true, &archive_call_only >= &archive_call_only);
-        // assert_eq!(false, &archive_call_only >= &traces_call_only);
-        // assert_eq!(false, &archive_call_only >= &archive_traces_call_only);
-        // assert_eq!(true, &archive_call_only >= &full_call_only);
-        // assert_eq!(false, &archive_call_only >= &traces_call_only);
-
-        // assert_eq!(false, &traces_call_only >= &archive_call_only);
-        // assert_eq!(true, &traces_call_only >= &traces_call_only);
-        // assert_eq!(false, &traces_call_only >= &archive_traces_call_only);
-        // assert_eq!(true, &traces_call_only >= &full_call_only);
-        // assert_eq!(true, &traces_call_only >= &traces_call_only);
-
-        // assert_eq!(true, &archive_traces_call_only >= &archive_call_only);
-        // assert_eq!(true, &archive_traces_call_only >= &traces_call_only);
-        // assert_eq!(true, &archive_traces_call_only >= &archive_traces_call_only);
-        // assert_eq!(true, &archive_traces_call_only >= &full_call_only);
-        // assert_eq!(true, &archive_traces_call_only >= &traces_call_only);
-
-        // assert_eq!(false, &traces_call_only >= &archive_call_only);
-        // assert_eq!(true, &traces_call_only >= &traces_call_only);
-        // assert_eq!(false, &traces_call_only >= &archive_traces_call_only);
-        // assert_eq!(true, &traces_call_only >= &full_call_only);
-        // assert_eq!(true, &traces_call_only >= &traces_call_only);
     }
 }

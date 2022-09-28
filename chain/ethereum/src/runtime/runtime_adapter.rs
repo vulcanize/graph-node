@@ -48,7 +48,6 @@ impl blockchain::RuntimeAdapter<Chain> for RuntimeAdapter {
             .cheapest_with_for_call(&NodeCapabilities {
                 archive: ds.mapping.requires_archive()?,
                 traces: false,
-                call_only: false,
             })?
             .cheap_clone();
 

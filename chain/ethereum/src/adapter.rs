@@ -136,7 +136,6 @@ impl bc::TriggerFilter<Chain> for TriggerFilter {
         NodeCapabilities {
             archive: false,
             traces: self.requires_traces(),
-            call_only: false,
         }
     }
 

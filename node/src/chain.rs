@@ -136,6 +136,7 @@ pub async fn create_ethereum_networks(
                 };
 
                 let supports_eip_1898 = !web3.features.contains("no_eip1898");
+                let call_only = web3.features.contains("call_only");
 
                 parsed_networks.insert(
                     name.to_string(),
@@ -148,6 +149,7 @@ pub async fn create_ethereum_networks(
                             transport,
                             eth_rpc_metrics.clone(),
                             supports_eip_1898,
+                            call_only,
                         )
                         .await,
                     ),
@@ -471,12 +473,10 @@ mod test {
         let traces = NodeCapabilities {
             archive: false,
             traces: true,
-            call_only: false,
         };
         let archive = NodeCapabilities {
             archive: true,
             traces: false,
-            call_only: false,
         };
         let has_mainnet_with_traces = ethereum_networks
             .adapter_with_capabilities("mainnet".to_string(), &traces)
