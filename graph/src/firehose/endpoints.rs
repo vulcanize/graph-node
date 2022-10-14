@@ -87,6 +87,13 @@ impl FirehoseEndpoint {
         }
     }
 
+    pub async fn get_block<M>(&self, logger: &Logger) -> Result<M, anyhow::Error>
+    where
+        M: prost::Message + BlockchainBlock + Default + 'static,
+    {
+        unimplemented!()
+    }
+
     pub async fn genesis_block_ptr<M>(&self, logger: &Logger) -> Result<BlockPtr, anyhow::Error>
     where
         M: prost::Message + BlockchainBlock + Default + 'static,

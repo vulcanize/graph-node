@@ -233,11 +233,17 @@ where
                 data_sources.iter().filter_map(DataSource::as_onchain),
             );
 
+            let block: C::Block = if self.inputs.chain.is_firehose_supported() {
+                self.inputs.chain.refetch_firehose_block(&logger, cursor)?
+            } else {
+                block.as_ref().clone()
+            };
+
             // Reprocess the triggers from this block that match the new data sources
             let block_with_triggers = self
                 .inputs
                 .triggers_adapter
-                .triggers_in_block(&logger, block.as_ref().clone(), &filter)
+                .triggers_in_block(&logger, block, &filter)
                 .await?;
 
             let triggers = block_with_triggers.trigger_data;

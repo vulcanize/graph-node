@@ -369,6 +369,18 @@ impl Blockchain for Chain {
             .await
     }
 
+    async fn refetch_firehose_block(
+        &self,
+        logger: &Logger,
+        cursor: FirehoseCursor,
+    ) -> Result<Box<dyn Block>, Error> {
+        let endpoint = self.firehose_endpoints.random().context(
+            "expecting to always have at least one Firehose endpoint when this method is called",
+        )?;
+
+        endpoint.get_block(logger)
+    }
+
     fn runtime_adapter(&self) -> Arc<dyn RuntimeAdapterTrait<Self>> {
         self.runtime_adapter.clone()
     }
