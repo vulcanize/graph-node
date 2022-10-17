@@ -234,7 +234,7 @@ where
             );
 
             let block: C::Block = if self.inputs.chain.is_firehose_supported() {
-                self.inputs.chain.refetch_firehose_block(&logger, cursor)?
+                self.inputs.chain.refetch_firehose_block(&logger, cursor).await?
             } else {
                 block.as_ref().clone()
             };

@@ -373,12 +373,12 @@ impl Blockchain for Chain {
         &self,
         logger: &Logger,
         cursor: FirehoseCursor,
-    ) -> Result<Box<dyn Block>, Error> {
+    ) -> Result<Box<BlockFinality>, Error> {
         let endpoint = self.firehose_endpoints.random().context(
             "expecting to always have at least one Firehose endpoint when this method is called",
         )?;
 
-        endpoint.get_block(logger)
+        endpoint.get_block::<codec::Block>(cursor, logger).await
     }
 
     fn runtime_adapter(&self) -> Arc<dyn RuntimeAdapterTrait<Self>> {
@@ -659,11 +659,11 @@ impl FirehoseMapperTrait<Chain> for FirehoseMapper {
                 ))
             }
 
-            StepIrreversible => {
+            StepFinal => {
                 unreachable!("irreversible step is not handled and should not be requested in the Firehose request")
             }
 
-            StepUnknown => {
+            StepUnset => {
                 unreachable!("unknown step should not happen in the Firehose response")
             }
         }

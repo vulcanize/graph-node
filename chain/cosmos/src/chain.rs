@@ -83,6 +83,15 @@ impl Blockchain for Chain {
 
     type NodeCapabilities = NodeCapabilities;
 
+    async fn refetch_firehose_block(
+        &self,
+        _logger: &Logger,
+        _cursor: FirehoseCursor,
+    ) -> Result<Box<codec::Block>, Error> {
+        unimplemented!("This chain does not support Dynamic Data Sources, firehose endpoint must be updated to supporte get_block")
+    }
+
+
     fn triggers_adapter(
         &self,
         _loc: &DeploymentLocator,
@@ -376,11 +385,11 @@ impl FirehoseMapperTrait<Chain> for FirehoseMapper {
                 ))
             }
 
-            ForkStep::StepIrreversible => {
-                panic!("irreversible step is not handled and should not be requested in the Firehose request")
+            ForkStep::StepFinal => {
+                panic!("final step is not handled and should not be requested in the Firehose request")
             }
 
-            ForkStep::StepUnknown => {
+            ForkStep::StepUnset => {
                 panic!("unknown step should not happen in the Firehose response")
             }
         }

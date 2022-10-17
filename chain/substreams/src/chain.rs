@@ -145,6 +145,14 @@ impl Blockchain for Chain {
             .await
     }
 
+    async fn refetch_firehose_block(
+        &self,
+        _logger: &Logger,
+        _cursor: FirehoseCursor,
+    ) -> Result<Box<Block>, Error> {
+        unimplemented!("This method makes no sense in substreams, it is only called on Dynamic Data Sources on specific blockchains")
+    }
+
     async fn new_polling_block_stream(
         &self,
         _deployment: DeploymentLocator,

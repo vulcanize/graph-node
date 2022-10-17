@@ -41,8 +41,6 @@ where
     }
 
     pub async fn run(self) {
-        use firehose::ForkStep::*;
-
         let mut latest_cursor = self.fetch_head_cursor().await;
         let mut backoff =
             ExponentialBackoff::new(Duration::from_millis(250), Duration::from_secs(30));
@@ -59,8 +57,8 @@ where
                 .stream_blocks(firehose::Request {
                     // Starts at current HEAD block of the chain (viewed from Firehose side)
                     start_block_num: -1,
-                    start_cursor: latest_cursor.clone(),
-                    fork_steps: vec![StepNew as i32, StepUndo as i32],
+                    cursor: latest_cursor.clone(),
+                    final_blocks_only: false,
                     ..Default::default()
                 })
                 .await;
@@ -122,7 +120,7 @@ where
                             trace!(self.logger, "Received undo block to ingest, skipping");
                             Ok(())
                         }
-                        StepIrreversible | StepUnknown => panic!(
+                        StepFinal | StepUnset => panic!(
                             "We explicitly requested StepNew|StepUndo but received something else"
                         ),
                     };
