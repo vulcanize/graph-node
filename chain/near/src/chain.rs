@@ -148,7 +148,6 @@ impl Blockchain for Chain {
 
     type NodeCapabilities = crate::capabilities::NodeCapabilities;
 
-    
     fn triggers_adapter(
         &self,
         _loc: &DeploymentLocator,
@@ -181,11 +180,11 @@ impl Blockchain for Chain {
             .await
     }
 
-async fn refetch_firehose_block(
+    async fn refetch_firehose_block(
         &self,
         _logger: &Logger,
         _cursor: FirehoseCursor,
-    ) -> Result<Box<codec::Block>, Error> {
+    ) -> Result<codec::Block, Error> {
         unimplemented!("This chain does not support Dynamic Data Sources, firehose endpoint must be updated to supporte get_block")
     }
 

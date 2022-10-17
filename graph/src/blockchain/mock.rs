@@ -321,7 +321,7 @@ impl Blockchain for MockBlockchain {
         &self,
         _logger: &slog::Logger,
         _cursor: FirehoseCursor,
-    ) -> Result<Box<MockBlock>, Error> {
+    ) -> Result<MockBlock, Error> {
         todo!()
     }
 

@@ -1,7 +1,7 @@
 use crate::{
+    blockchain::block_stream::FirehoseCursor,
     blockchain::Block as BlockchainBlock,
     blockchain::BlockPtr,
-    blockchain::block_stream::FirehoseCursor,
     cheap_clone::CheapClone,
     components::store::BlockNumber,
     firehose::decode_firehose_block,
@@ -89,7 +89,11 @@ impl FirehoseEndpoint {
         }
     }
 
-    pub async fn get_block<M>(&self, cursor: FirehoseCursor, logger: &Logger) -> Result<Box<dyn BlockchainBlock>, anyhow::Error> 
+    pub async fn get_block<M>(
+        &self,
+        cursor: FirehoseCursor,
+        logger: &Logger,
+    ) -> Result<M, anyhow::Error>
     where
         M: prost::Message + BlockchainBlock + Default + 'static,
     {
@@ -119,17 +123,21 @@ impl FirehoseEndpoint {
             "Connecting to firehose to retrieve block for cursor {}", cursor
         );
 
-        let req = firehose::SingleBlockRequest{
-        reference: Some(firehose::single_block_request::Reference::Cursor(firehose::single_block_request::Cursor{
-        cursor: cursor.to_string(),
-        },
-        )),
+        let req = firehose::SingleBlockRequest {
+            reference: Some(firehose::single_block_request::Reference::Cursor(
+                firehose::single_block_request::Cursor {
+                    cursor: cursor.to_string(),
+                },
+            )),
         };
-        let _resp = client.block(req);
+        let resp = client.block(req);
 
-        // FIXME 
-
-        Err(anyhow::format_err!("firehose error"))
+        match resp.await {
+            Ok(v) => Ok(M::decode(
+                v.get_ref().block.as_ref().unwrap().value.as_ref(),
+            )?),
+            Err(e) => return Err(anyhow::format_err!("firehose error {}", e)),
+        }
     }
 
     pub async fn genesis_block_ptr<M>(&self, logger: &Logger) -> Result<BlockPtr, anyhow::Error>

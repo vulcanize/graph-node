@@ -373,12 +373,14 @@ impl Blockchain for Chain {
         &self,
         logger: &Logger,
         cursor: FirehoseCursor,
-    ) -> Result<Box<BlockFinality>, Error> {
+    ) -> Result<BlockFinality, Error> {
         let endpoint = self.firehose_endpoints.random().context(
             "expecting to always have at least one Firehose endpoint when this method is called",
         )?;
 
-        endpoint.get_block::<codec::Block>(cursor, logger).await
+        let block = endpoint.get_block::<codec::Block>(cursor, logger).await?;
+        let ethereum_block: EthereumBlockWithCalls = (&block).try_into()?;
+        Ok(BlockFinality::NonFinal(ethereum_block))
     }
 
     fn runtime_adapter(&self) -> Arc<dyn RuntimeAdapterTrait<Self>> {

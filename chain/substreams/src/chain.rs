@@ -149,7 +149,7 @@ impl Blockchain for Chain {
         &self,
         _logger: &Logger,
         _cursor: FirehoseCursor,
-    ) -> Result<Box<Block>, Error> {
+    ) -> Result<Block, Error> {
         unimplemented!("This method makes no sense in substreams, it is only called on Dynamic Data Sources on specific blockchains")
     }
 

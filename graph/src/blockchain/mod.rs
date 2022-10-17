@@ -142,7 +142,7 @@ pub trait Blockchain: Debug + Sized + Send + Sync + Unpin + 'static {
         &self,
         logger: &Logger,
         cursor: FirehoseCursor,
-    ) -> Result<Box<Self::Block>, Error>;
+    ) -> Result<Self::Block, Error>;
 
     fn runtime_adapter(&self) -> Arc<dyn RuntimeAdapter<Self>>;
 

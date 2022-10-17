@@ -87,10 +87,9 @@ impl Blockchain for Chain {
         &self,
         _logger: &Logger,
         _cursor: FirehoseCursor,
-    ) -> Result<Box<codec::Block>, Error> {
+    ) -> Result<codec::Block, Error> {
         unimplemented!("This chain does not support Dynamic Data Sources, firehose endpoint must be updated to supporte get_block")
     }
-
 
     fn triggers_adapter(
         &self,
@@ -386,7 +385,9 @@ impl FirehoseMapperTrait<Chain> for FirehoseMapper {
             }
 
             ForkStep::StepFinal => {
-                panic!("final step is not handled and should not be requested in the Firehose request")
+                panic!(
+                    "final step is not handled and should not be requested in the Firehose request"
+                )
             }
 
             ForkStep::StepUnset => {
