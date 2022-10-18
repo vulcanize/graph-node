@@ -1306,11 +1306,10 @@ checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "form_urlencoded"
-version = "1.0.1"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fc25a87fa4fd2094bffb06925852034d90a17f0d1e05197d4956d3555752191"
+checksum = "a9c384f161156f5260c24a097c56119f9be8c798586aecc13afbcbe7b7e26bf8"
 dependencies = [
- "matches",
  "percent-encoding",
 ]
 
@@ -1509,7 +1508,7 @@ dependencies = [
 
 [[package]]
 name = "graph"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "Inflector",
  "anyhow",
@@ -1574,7 +1573,7 @@ dependencies = [
 
 [[package]]
 name = "graph-chain-arweave"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "base64-url",
  "diesel",
@@ -1590,7 +1589,7 @@ dependencies = [
 
 [[package]]
 name = "graph-chain-common"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "anyhow",
  "heck 0.4.0",
@@ -1600,7 +1599,7 @@ dependencies = [
 
 [[package]]
 name = "graph-chain-cosmos"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "anyhow",
  "graph",
@@ -1616,7 +1615,7 @@ dependencies = [
 
 [[package]]
 name = "graph-chain-ethereum"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "anyhow",
  "base64",
@@ -1642,7 +1641,7 @@ dependencies = [
 
 [[package]]
 name = "graph-chain-near"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "base64",
  "diesel",
@@ -1657,7 +1656,7 @@ dependencies = [
 
 [[package]]
 name = "graph-chain-substreams"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1683,7 +1682,7 @@ dependencies = [
 
 [[package]]
 name = "graph-core"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1720,7 +1719,7 @@ dependencies = [
 
 [[package]]
 name = "graph-graphql"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "Inflector",
  "anyhow",
@@ -1742,14 +1741,14 @@ dependencies = [
 
 [[package]]
 name = "graph-mock"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "graph",
 ]
 
 [[package]]
 name = "graph-node"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "clap",
  "crossbeam-channel",
@@ -1787,7 +1786,7 @@ dependencies = [
 
 [[package]]
 name = "graph-runtime-derive"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "heck 0.4.0",
  "proc-macro2",
@@ -1797,7 +1796,7 @@ dependencies = [
 
 [[package]]
 name = "graph-runtime-test"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "graph",
  "graph-chain-ethereum",
@@ -1813,7 +1812,7 @@ dependencies = [
 
 [[package]]
 name = "graph-runtime-wasm"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1839,7 +1838,7 @@ dependencies = [
 
 [[package]]
 name = "graph-server-http"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "futures 0.1.31",
  "graph",
@@ -1853,7 +1852,7 @@ dependencies = [
 
 [[package]]
 name = "graph-server-index-node"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "blake3 1.3.1",
  "either",
@@ -1873,7 +1872,7 @@ dependencies = [
 
 [[package]]
 name = "graph-server-json-rpc"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "graph",
  "jsonrpsee",
@@ -1882,7 +1881,7 @@ dependencies = [
 
 [[package]]
 name = "graph-server-metrics"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "graph",
  "http",
@@ -1893,7 +1892,7 @@ dependencies = [
 
 [[package]]
 name = "graph-server-websocket"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "anyhow",
  "futures 0.1.31",
@@ -1909,7 +1908,7 @@ dependencies = [
 
 [[package]]
 name = "graph-store-postgres"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "Inflector",
  "anyhow",
@@ -1949,7 +1948,7 @@ dependencies = [
 
 [[package]]
 name = "graph-tests"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -2277,6 +2276,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "418a0a6fab821475f634efe3ccc45c013f742efe03d853e8d3355d5cb850ecf8"
 dependencies = [
  "matches",
+ "unicode-bidi",
+ "unicode-normalization",
+]
+
+[[package]]
+name = "idna"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e14ddfc70884202db2244c223200c204c2bda1bc6e0998d11b5e024d657209e6"
+dependencies = [
  "unicode-bidi",
  "unicode-normalization",
 ]
@@ -2938,9 +2947,9 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "openssl"
-version = "0.10.41"
+version = "0.10.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "618febf65336490dfcf20b73f885f5651a0c89c64c2d4a8c3662585a70bf5bd0"
+checksum = "12fc0523e3bd51a692c8850d075d74dc062ccf251c0110668cbd921917118a13"
 dependencies = [
  "bitflags",
  "cfg-if 1.0.0",
@@ -2970,9 +2979,9 @@ checksum = "28988d872ab76095a6e6ac88d99b54fd267702734fd7ffe610ca27f533ddb95a"
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.75"
+version = "0.9.76"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5f9bd0c2710541a3cda73d6f9ac4f1b240de4ae261065d309dbe73d9dceb42f"
+checksum = "5230151e44c0f05157effb743e8d517472843121cf9243e8b81393edb5acd9ce"
 dependencies = [
  "autocfg",
  "cc",
@@ -3102,9 +3111,9 @@ checksum = "acbf547ad0c65e31259204bd90935776d1c693cec2f4ff7abb7a1bbbd40dfe58"
 
 [[package]]
 name = "percent-encoding"
-version = "2.1.0"
+version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
+checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
 
 [[package]]
 name = "petgraph"
@@ -3342,9 +3351,9 @@ checksum = "bc881b2c22681370c6a780e47af9840ef841837bc98118431d4e1868bd0c1086"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.43"
+version = "1.0.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a2ca2c61bc9f3d74d2886294ab7b9853abd9c1ad903a3ac7815c58989bb7bab"
+checksum = "94e2ef8dbfc347b10c094890f778ee2e36ca9bb4262e86dc99cd217e35f3470b"
 dependencies = [
  "unicode-ident",
 ]
@@ -4353,7 +4362,7 @@ dependencies = [
 
 [[package]]
 name = "test-store"
-version = "0.28.0"
+version = "0.28.2"
 dependencies = [
  "diesel",
  "graph",
@@ -4945,12 +4954,12 @@ checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 
 [[package]]
 name = "url"
-version = "2.3.0"
+version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22fe195a4f217c25b25cb5058ced57059824a678474874038dc88d211bf508d3"
+checksum = "0d68c799ae75762b8c3fe375feb6600ef5602c883c5d21eb51c09f22b83c4643"
 dependencies = [
  "form_urlencoded",
- "idna",
+ "idna 0.3.0",
  "percent-encoding",
 ]
 
@@ -5355,7 +5364,7 @@ dependencies = [
  "futures-timer",
  "headers",
  "hex",
- "idna",
+ "idna 0.2.3",
  "jsonrpc-core",
  "log",
  "once_cell",

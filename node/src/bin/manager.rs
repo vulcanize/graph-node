@@ -16,7 +16,7 @@ use graph_graphql::prelude::GraphQlRunner;
 use graph_node::config::{self, Config as Cfg};
 use graph_node::manager::commands;
 use graph_node::{
-    chain::create_ethereum_networks,
+    chain::create_all_ethereum_networks,
     manager::{deployment::DeploymentSearch, PanicSubscriptionManager},
     store_builder::StoreBuilder,
     MetricsContext,
@@ -230,13 +230,36 @@ pub enum Command {
         #[clap(long, short, default_value = "0.20")]
         prune_ratio: f64,
         /// How much history to keep in blocks
-        #[clap(long, short, default_value = "10000")]
+        #[clap(long, short = 'y', default_value = "10000")]
         history: usize,
     },
 
     /// General database management
     #[clap(subcommand)]
     Database(DatabaseCommand),
+
+    /// Delete a deployment and all it's indexed data
+    ///
+    /// The deployment can be specified as either a subgraph name, an IPFS
+    /// hash `Qm..`, or the database namespace `sgdNNN`. Since the same IPFS
+    /// hash can be deployed in multiple shards, it is possible to specify
+    /// the shard by adding `:shard` to the IPFS hash.
+    Drop {
+        /// The deployment identifier
+        deployment: DeploymentSearch,
+        /// Search only for current version
+        #[clap(long, short)]
+        current: bool,
+        /// Search only for pending versions
+        #[clap(long, short)]
+        pending: bool,
+        /// Search only for used (current and pending) versions
+        #[clap(long, short)]
+        used: bool,
+        /// Skip confirmation prompt
+        #[clap(long, short)]
+        force: bool,
+    },
 }
 
 impl Command {
@@ -717,7 +740,7 @@ impl Context {
     async fn ethereum_networks(&self) -> anyhow::Result<EthereumNetworks> {
         let logger = self.logger.clone();
         let registry = self.metrics_registry();
-        create_ethereum_networks(logger, registry, &self.config).await
+        create_all_ethereum_networks(logger, registry, &self.config).await
     }
 
     fn chain_store(self, chain_name: &str) -> anyhow::Result<Arc<ChainStore>> {
@@ -848,7 +871,7 @@ async fn main() -> anyhow::Result<()> {
                 } => {
                     let count = count.unwrap_or(1_000_000);
                     let older = older.map(|older| chrono::Duration::minutes(older as i64));
-                    commands::unused_deployments::remove(store, count, deployment, older)
+                    commands::unused_deployments::remove(store, count, deployment.as_deref(), older)
                 }
             }
         }
@@ -869,7 +892,7 @@ async fn main() -> anyhow::Result<()> {
                 }
             }
         }
-        Remove { name } => commands::remove::run(ctx.subgraph_store(), name),
+        Remove { name } => commands::remove::run(ctx.subgraph_store(), &name),
         Create { name } => commands::create::run(ctx.subgraph_store(), name),
         Unassign { deployment } => {
             let sender = ctx.notification_sender();
@@ -1096,6 +1119,29 @@ async fn main() -> anyhow::Result<()> {
         } => {
             let (store, primary_pool) = ctx.store_and_primary();
             commands::prune::run(store, primary_pool, deployment, history, prune_ratio).await
+        }
+        Drop {
+            deployment,
+            current,
+            pending,
+            used,
+            force,
+        } => {
+            let sender = ctx.notification_sender();
+            let (store, primary_pool) = ctx.store_and_primary();
+            let subgraph_store = store.subgraph_store();
+
+            commands::drop::run(
+                primary_pool,
+                subgraph_store,
+                sender,
+                deployment,
+                current,
+                pending,
+                used,
+                force,
+            )
+            .await
         }
     }
 }

@@ -1,7 +1,7 @@
 //! Utilities for dealing with deployment metadata. Any connection passed
 //! into these methods must be for the shard that holds the actual
 //! deployment data and metadata
-use crate::{detail::GraphNodeVersion, primary::DeploymentId};
+use crate::{advisory_lock, detail::GraphNodeVersion, primary::DeploymentId};
 use diesel::{
     connection::SimpleConnection,
     dsl::{count, delete, insert_into, select, sql, update},
@@ -470,11 +470,15 @@ pub fn initialize_block_ptr(conn: &PgConnection, site: &Site) -> Result<(), Stor
 
     let needs_init = d::table
         .filter(d::id.eq(site.id))
-        .filter(d::latest_ethereum_block_hash.is_null())
-        .select(d::id)
-        .first::<i32>(conn)
-        .optional()?
-        .is_some();
+        .select(d::latest_ethereum_block_hash)
+        .first::<Option<Vec<u8>>>(conn)
+        .map_err(|e| {
+            constraint_violation!(
+                "deployment sgd{} must have been created before calling initialize_block_ptr but we got {}",
+                site.id, e
+            )
+        })?
+        .is_none();
 
     if needs_init {
         if let (Some(hash), Some(number)) = m::table
@@ -1043,18 +1047,11 @@ pub fn set_earliest_block(
     Ok(())
 }
 
-/// Lock the row for `site` in `subgraph_deployment` for update for the
-/// remainder of the current transaction. This lock is used to coordinate
-/// the changes that the subgraph writer makes with changes that other parts
-/// of the system, in particular, pruning make
+/// Lock the deployment `site` for writes for the remainder of the current
+/// transaction. This lock is used to coordinate the changes that the
+/// subgraph writer makes with changes that other parts of the system, in
+/// particular, pruning make
 //  see also: deployment-lock-for-update
 pub fn lock(conn: &PgConnection, site: &Site) -> Result<(), StoreError> {
-    use subgraph_deployment as d;
-
-    d::table
-        .select(d::id)
-        .filter(d::id.eq(site.id))
-        .for_update()
-        .get_result::<DeploymentId>(conn)?;
-    Ok(())
+    advisory_lock::lock_deployment_xact(conn, site)
 }
