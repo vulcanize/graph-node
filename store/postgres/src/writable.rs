@@ -909,6 +909,7 @@ impl Writer {
         manifest_idx_and_name: Vec<(u32, String)>,
         processed_data_sources: Vec<StoredDynamicDataSource>,
     ) -> Result<(), StoreError> {
+        stopwatch.start_section("execute_write_req");
         match self {
             Writer::Sync(store) => store.transact_block_operations(
                 &block_ptr_to,

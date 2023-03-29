@@ -1168,6 +1168,7 @@ impl DeploymentStore {
         manifest_idx_and_name: &[(u32, String)],
         processed_data_sources: &[StoredDynamicDataSource],
     ) -> Result<StoreEvent, StoreError> {
+        let _section = stopwatch.start_section("transact_blocks_ds");
         let conn = {
             let _section = stopwatch.start_section("transact_blocks_get_conn");
             self.get_conn()?
