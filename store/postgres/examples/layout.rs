@@ -76,6 +76,7 @@ fn print_diesel_tables(layout: &Layout) {
             ColumnType::Int => "i32",
             ColumnType::Int8 => "i64",
             ColumnType::String | ColumnType::Enum(_) | ColumnType::TSVector(_) => "String",
+            ColumnType::Timestamp => "scalar::Timestamp",
         }
         .to_owned();
 

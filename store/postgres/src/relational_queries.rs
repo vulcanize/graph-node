@@ -10,7 +10,7 @@ use diesel::query_builder::{AstPass, QueryFragment, QueryId};
 use diesel::query_dsl::{LoadQuery, RunQueryDsl};
 use diesel::result::{Error as DieselError, QueryResult};
 use diesel::sql_types::{
-    Array, BigInt, Binary, Bool, Int8, Integer, Jsonb, Range, Text, Timestamp,
+    Array, BigInt, Binary, Bool, Int8, Integer, Jsonb, Range, Text, Timestamptz,
 };
 use diesel::Connection;
 
@@ -581,22 +581,14 @@ impl<'a> QueryFragment<Pg> for QueryValue<'a> {
                         .map_err(|e| DieselError::SerializationError(Box::new(e)))?;
                     out.push_bind_param::<Binary, _>(&bytes.as_slice())
                 }
-                ColumnType::Timestamp => out.push_bind_param::<Timestamp, _>(
-                    &s.parse::<NaiveDateTime>().map_err(|e| {
-                        constraint_violation!(
-                            "failed to convert `{}` to an Timestamp: {}",
-                            s,
-                            e.to_string()
-                        )
-                    })?,
-                ),
+                ColumnType::Timestamp => out.push_bind_param::<Timestamptz, _>(s),
                 _ => unreachable!(
                     "only string, enum and tsvector columns have values of type string"
                 ),
             },
             Value::Int(i) => out.push_bind_param::<Integer, _>(i),
             Value::Int8(i) => out.push_bind_param::<Int8, _>(i),
-            Value::Timestamp(i) => out.push_bind_param::<Timestamp, _>(i),
+            Value::Timestamp(i) => out.push_bind_param::<Timestamptz, _>(i),
             Value::BigDecimal(d) => {
                 out.push_bind_param::<Text, _>(&d.to_string())?;
                 out.push_sql("::numeric");
@@ -615,7 +607,7 @@ impl<'a> QueryFragment<Pg> for QueryValue<'a> {
                     ColumnType::Bytes => out.push_bind_param::<Array<Binary>, _>(values),
                     ColumnType::Int => out.push_bind_param::<Array<Integer>, _>(values),
                     ColumnType::Int8 => out.push_bind_param::<Array<Int8>, _>(&values),
-                    ColumnType::Timestamp => out.push_bind_param::<Array<Timestamp>, _>(&values),
+                    ColumnType::Timestamp => out.push_bind_param::<Array<Timestamptz>, _>(&values),
                     ColumnType::String => out.push_bind_param::<Array<Text>, _>(values),
                     ColumnType::Enum(enum_type) => {
                         out.push_bind_param::<Array<Text>, _>(values)?;

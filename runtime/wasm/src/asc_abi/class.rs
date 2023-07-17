@@ -2,7 +2,7 @@ use ethabi;
 use semver::Version;
 
 use graph::{
-    data::store,
+    data::store::{self, scalar::Timestamp},
     runtime::{
         gas::GasCounter, AscHeap, AscIndexId, AscType, AscValue, HostExportError,
         IndexForAscTypeId, ToAscObj,
@@ -461,6 +461,12 @@ impl From<bool> for EnumPayload {
 impl From<i64> for EnumPayload {
     fn from(x: i64) -> EnumPayload {
         EnumPayload(x as u64)
+    }
+}
+
+impl From<&Timestamp> for EnumPayload {
+    fn from(x: &Timestamp) -> EnumPayload {
+        EnumPayload::from(x.as_secs_since_epoch())
     }
 }
 

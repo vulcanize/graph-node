@@ -188,7 +188,7 @@ pub enum Value {
     String(String),
     Int(i32),
     Int8(i64),
-    Timestamp(NaiveDateTime),
+    Timestamp(scalar::Timestamp),
     BigDecimal(scalar::BigDecimal),
     Bool(bool),
     List(Vec<Value>),
@@ -344,14 +344,12 @@ impl Value {
                     INT8_SCALAR => Value::Int8(s.parse::<i64>().map_err(|_| {
                         QueryExecutionError::ValueParseError("Int8".to_string(), format!("{}", s))
                     })?),
-                    TIMESTAMP_SCALAR => {
-                        Value::Timestamp(s.parse::<NaiveDateTime>().map_err(|_| {
-                            QueryExecutionError::ValueParseError(
-                                "Timestamp".to_string(),
-                                format!("{}", s),
-                            )
-                        })?)
-                    }
+                    TIMESTAMP_SCALAR => Value::Timestamp(s.parse().map_err(|_| {
+                        QueryExecutionError::ValueParseError(
+                            "Timestamp".to_string(),
+                            format!("{}", s),
+                        )
+                    })?),
                     _ => Value::String(s.clone()),
                 }
             }
