@@ -9,7 +9,9 @@ use diesel::pg::{Pg, PgConnection};
 use diesel::query_builder::{AstPass, QueryFragment, QueryId};
 use diesel::query_dsl::{LoadQuery, RunQueryDsl};
 use diesel::result::{Error as DieselError, QueryResult};
-use diesel::sql_types::{Array, BigInt, Binary, Bool, Int8, Integer, Jsonb, Range, Text};
+use diesel::sql_types::{
+    Array, BigInt, Binary, Bool, Int8, Integer, Jsonb, Range, Text, Timestamp, Timestamptz,
+};
 use diesel::Connection;
 
 use graph::components::store::write::WriteChunk;
@@ -18,6 +20,7 @@ use graph::data::store::{Id, NULL};
 use graph::data::store::{IdList, IdRef, QueryObject};
 use graph::data::value::{Object, Word};
 use graph::data_source::CausalityRegion;
+use graph::prelude::chrono::NaiveDateTime;
 use graph::prelude::{
     anyhow, r, serde_json, Attribute, BlockNumber, ChildMultiplicity, Entity, EntityCollection,
     EntityFilter, EntityLink, EntityOrder, EntityOrderByChild, EntityOrderByChildInfo, EntityRange,
@@ -566,12 +569,22 @@ impl<'a> QueryFragment<Pg> for QueryValue<'a> {
                         .map_err(|e| DieselError::SerializationError(Box::new(e)))?;
                     out.push_bind_param::<Binary, _>(&bytes.as_slice())
                 }
+                ColumnType::Timestamp => out.push_bind_param::<Timestamp, _>(
+                    &s.parse::<NaiveDateTime>().map_err(|e| {
+                        constraint_violation!(
+                            "failed to convert `{}` to an Timestamp: {}",
+                            s,
+                            e.to_string()
+                        )
+                    })?,
+                ),
                 _ => unreachable!(
                     "only string, enum and tsvector columns have values of type string"
                 ),
             },
             Value::Int(i) => out.push_bind_param::<Integer, _>(i),
             Value::Int8(i) => out.push_bind_param::<Int8, _>(i),
+            Value::Timestamp(i) => out.push_bind_param::<Timestamptz, _>(i),
             Value::BigDecimal(d) => {
                 out.push_bind_param::<Text, _>(&d.to_string())?;
                 out.push_sql("::numeric");
@@ -590,6 +603,7 @@ impl<'a> QueryFragment<Pg> for QueryValue<'a> {
                     ColumnType::Bytes => out.push_bind_param::<Array<Binary>, _>(values),
                     ColumnType::Int => out.push_bind_param::<Array<Integer>, _>(values),
                     ColumnType::Int8 => out.push_bind_param::<Array<Int8>, _>(&values),
+                    ColumnType::Timestamp => out.push_bind_param::<Array<Timestamptz>, _>(&values),
                     ColumnType::String => out.push_bind_param::<Array<Text>, _>(values),
                     ColumnType::Enum(enum_type) => {
                         out.push_bind_param::<Array<Text>, _>(values)?;
@@ -1168,6 +1182,7 @@ impl<'a> QueryFilter<'a> {
             }
             Value::Null
             | Value::BigDecimal(_)
+            | Value::Timestamp(_)
             | Value::Int(_)
             | Value::Int8(_)
             | Value::Bool(_)
@@ -1241,6 +1256,7 @@ impl<'a> QueryFilter<'a> {
                 | Value::BigDecimal(_)
                 | Value::Int(_)
                 | Value::Int8(_)
+                | Value::Timestamp(_)
                 | Value::String(_) => QueryValue(value, &column.column_type).walk_ast(out)?,
                 Value::Bool(_) | Value::List(_) | Value::Null => {
                     return Err(UnsupportedFilter {
@@ -1381,6 +1397,7 @@ impl<'a> QueryFilter<'a> {
             | Value::BigDecimal(_)
             | Value::Int(_)
             | Value::Int8(_)
+            | Value::Timestamp(_)
             | Value::List(_)
             | Value::Null => {
                 return Err(UnsupportedFilter {

@@ -1,3 +1,4 @@
+use chrono::{DateTime, NaiveDateTime, Utc};
 use diesel::deserialize::FromSql;
 use diesel::serialize::ToSql;
 use diesel_derives::{AsExpression, FromSqlRow};
@@ -236,6 +237,13 @@ impl GasSizeOf for BigDecimal {
     fn gas_size_of(&self) -> Gas {
         let (int, _) = self.as_bigint_and_exponent();
         BigInt::unchecked_new(int).gas_size_of()
+    }
+}
+
+// Timestamp
+impl GasSizeOf for NaiveDateTime {
+    fn gas_size_of(&self) -> Gas {
+        Gas::new(1)
     }
 }
 
@@ -684,6 +692,72 @@ impl ToSql<diesel::sql_types::Binary, diesel::pg::Pg> for Bytes {
         out: &mut diesel::serialize::Output<W, diesel::pg::Pg>,
     ) -> diesel::serialize::Result {
         <_ as ToSql<diesel::sql_types::Binary, _>>::to_sql(self.as_slice(), out)
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct Timestamp(DateTime<Utc>);
+
+impl Timestamp {
+    pub fn timestamp(&self) -> i64 {
+        self.0.timestamp()
+    }
+
+    pub fn from_secs_since_epoch(secs: i64) -> Self {
+        Timestamp(DateTime::from_timestamp(secs, 0).expect("we can represent all i64s"))
+    }
+
+    pub fn as_secs_since_epoch(&self) -> i64 {
+        self.0.timestamp()
+    }
+}
+
+impl StableHash for Timestamp {
+    fn stable_hash<H: stable_hash::StableHasher>(&self, field_address: H::Addr, state: &mut H) {
+        self.0.timestamp_micros().stable_hash(field_address, state)
+    }
+}
+
+impl stable_hash_legacy::StableHash for Timestamp {
+    fn stable_hash<H: stable_hash_legacy::StableHasher>(
+        &self,
+        sequence_number: H::Seq,
+        state: &mut H,
+    ) {
+        stable_hash_legacy::StableHash::stable_hash(
+            &self.0.timestamp_micros(),
+            sequence_number,
+            state,
+        )
+    }
+}
+
+impl FromStr for Timestamp {
+    type Err = chrono::ParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Timestamp(DateTime::parse_from_rfc3339(s)?.into()))
+    }
+}
+
+impl Display for Timestamp {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self.0.to_rfc3339())
+    }
+}
+
+impl ToSql<diesel::sql_types::Timestamptz, diesel::pg::Pg> for Timestamp {
+    fn to_sql<W: Write>(
+        &self,
+        out: &mut diesel::serialize::Output<W, diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
+        <_ as ToSql<diesel::sql_types::Timestamptz, _>>::to_sql(&self.0, out)
+    }
+}
+
+impl GasSizeOf for Timestamp {
+    fn const_gas_size_of() -> Option<Gas> {
+        Some(Gas::new(std::mem::size_of::<Timestamp>().saturating_into()))
     }
 }
 

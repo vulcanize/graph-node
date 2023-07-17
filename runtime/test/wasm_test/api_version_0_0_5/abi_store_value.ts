@@ -22,6 +22,12 @@ export function value_from_int8(int: i64): Value {
     return value
 }
 
+export function value_from_timestamp(ts: string): Value {
+    let value = new Value();
+    value.kind = ValueKind.STRING;
+    value.data = ts as string
+    return value
+}
 
 export function value_from_big_decimal(float: BigInt): Value {
     let value = new Value();

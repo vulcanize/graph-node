@@ -618,6 +618,7 @@ fn field_scalar_filter_input_values(
         "ID" => vec!["", "not", "gt", "lt", "gte", "lte", "in", "not_in"],
         "Int" => vec!["", "not", "gt", "lt", "gte", "lte", "in", "not_in"],
         "Int8" => vec!["", "not", "gt", "lt", "gte", "lte", "in", "not_in"],
+        "Timestamp" => vec!["", "not", "gt", "lt", "gte", "lte", "in", "not_in"],
         "String" => vec![
             "",
             "not",
@@ -1148,6 +1149,9 @@ mod tests {
         schema
             .get_named_type("Int8")
             .expect("Int8 type is missing in API schema");
+        schema
+            .get_named_type("Timestamp")
+            .expect("Timestamp type is missing in API schema");
     }
 
     #[test]
