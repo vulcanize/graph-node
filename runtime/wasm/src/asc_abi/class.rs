@@ -553,6 +553,7 @@ pub enum StoreValueKind {
     Bytes,
     BigInt,
     Int8,
+    Timestamp,
 }
 
 impl StoreValueKind {
@@ -563,6 +564,7 @@ impl StoreValueKind {
             Value::String(_) => StoreValueKind::String,
             Value::Int(_) => StoreValueKind::Int,
             Value::Int8(_) => StoreValueKind::Int8,
+            Value::Timestamp(_) => StoreValueKind::Timestamp,
             Value::BigDecimal(_) => StoreValueKind::BigDecimal,
             Value::Bool(_) => StoreValueKind::Bool,
             Value::List(_) => StoreValueKind::Array,

@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use diesel::deserialize::FromSql;
 use diesel::serialize::ToSql;
 use diesel_derives::{AsExpression, FromSqlRow};
@@ -236,6 +237,13 @@ impl GasSizeOf for BigDecimal {
     fn gas_size_of(&self) -> Gas {
         let (int, _) = self.as_bigint_and_exponent();
         BigInt::unchecked_new(int).gas_size_of()
+    }
+}
+
+// Timestamp
+impl GasSizeOf for NaiveDateTime {
+    fn gas_size_of(&self) -> Gas {
+        Gas::new(1)
     }
 }
 

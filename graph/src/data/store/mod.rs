@@ -8,6 +8,7 @@ use crate::{
 };
 use crate::{data::subgraph::DeploymentHash, prelude::EntityChange};
 use anyhow::{anyhow, Error};
+use chrono::NaiveDateTime;
 use itertools::Itertools;
 use serde::de;
 use serde::{Deserialize, Serialize};
@@ -139,6 +140,7 @@ pub const BYTES_SCALAR: &str = "Bytes";
 pub const BIG_INT_SCALAR: &str = "BigInt";
 pub const BIG_DECIMAL_SCALAR: &str = "BigDecimal";
 pub const INT8_SCALAR: &str = "Int8";
+pub const TIMESTAMP_SCALAR: &str = "Timestamp";
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ValueType {
@@ -149,6 +151,7 @@ pub enum ValueType {
     Int,
     Int8,
     String,
+    Timestamp,
 }
 
 impl FromStr for ValueType {
@@ -162,6 +165,7 @@ impl FromStr for ValueType {
             "BigDecimal" => Ok(ValueType::BigDecimal),
             "Int" => Ok(ValueType::Int),
             "Int8" => Ok(ValueType::Int8),
+            "Timestamp" => Ok(ValueType::Timestamp),
             "String" | "ID" => Ok(ValueType::String),
             s => Err(anyhow!("Type not available in this context: {}", s)),
         }
@@ -184,6 +188,7 @@ pub enum Value {
     String(String),
     Int(i32),
     Int8(i64),
+    Timestamp(NaiveDateTime),
     BigDecimal(scalar::BigDecimal),
     Bool(bool),
     List(Vec<Value>),
@@ -239,6 +244,9 @@ impl stable_hash_legacy::StableHash for Value {
             BigInt(inner) => {
                 stable_hash_legacy::StableHash::stable_hash(inner, sequence_number, state)
             }
+            Timestamp(inner) => {
+                stable_hash_legacy::StableHash::stable_hash(inner, sequence_number, state)
+            }
         }
     }
 }
@@ -286,6 +294,10 @@ impl StableHash for Value {
                 inner.stable_hash(field_address.child(0), state);
                 8
             }
+            Timestamp(inner) => {
+                inner.stable_hash(field_address.child(0), state);
+                9
+            }
         };
 
         state.write(field_address, &[variant])
@@ -332,6 +344,14 @@ impl Value {
                     INT8_SCALAR => Value::Int8(s.parse::<i64>().map_err(|_| {
                         QueryExecutionError::ValueParseError("Int8".to_string(), format!("{}", s))
                     })?),
+                    TIMESTAMP_SCALAR => {
+                        Value::Timestamp(s.parse::<NaiveDateTime>().map_err(|_| {
+                            QueryExecutionError::ValueParseError(
+                                "Timestamp".to_string(),
+                                format!("{}", s),
+                            )
+                        })?)
+                    }
                     _ => Value::String(s.clone()),
                 }
             }
@@ -424,6 +444,7 @@ impl Value {
             Value::Bytes(_) => "Bytes".to_owned(),
             Value::Int(_) => "Int".to_owned(),
             Value::Int8(_) => "Int8".to_owned(),
+            Value::Timestamp(_) => "Timestamp".to_owned(),
             Value::List(values) => {
                 if let Some(v) = values.first() {
                     format!("[{}]", v.type_name())
@@ -467,6 +488,7 @@ impl fmt::Display for Value {
                 Value::String(s) => s.to_string(),
                 Value::Int(i) => i.to_string(),
                 Value::Int8(i) => i.to_string(),
+                Value::Timestamp(i) => i.to_string(),
                 Value::BigDecimal(d) => d.to_string(),
                 Value::Bool(b) => b.to_string(),
                 Value::Null => "null".to_string(),
@@ -485,6 +507,7 @@ impl fmt::Debug for Value {
             Self::String(s) => f.debug_tuple("String").field(s).finish(),
             Self::Int(i) => f.debug_tuple("Int").field(i).finish(),
             Self::Int8(i) => f.debug_tuple("Int8").field(i).finish(),
+            Self::Timestamp(i) => f.debug_tuple("Timestamp").field(i).finish(),
             Self::BigDecimal(d) => d.fmt(f),
             Self::Bool(arg0) => f.debug_tuple("Bool").field(arg0).finish(),
             Self::List(arg0) => f.debug_tuple("List").field(arg0).finish(),
@@ -501,6 +524,7 @@ impl From<Value> for q::Value {
             Value::String(s) => q::Value::String(s),
             Value::Int(i) => q::Value::Int(q::Number::from(i)),
             Value::Int8(i) => q::Value::String(i.to_string()),
+            Value::Timestamp(i) => q::Value::String(i.timestamp().to_string()),
             Value::BigDecimal(d) => q::Value::String(d.to_string()),
             Value::Bool(b) => q::Value::Boolean(b),
             Value::Null => q::Value::Null,
@@ -519,6 +543,7 @@ impl From<Value> for r::Value {
             Value::String(s) => r::Value::String(s),
             Value::Int(i) => r::Value::Int(i as i64),
             Value::Int8(i) => r::Value::String(i.to_string()),
+            Value::Timestamp(i) => r::Value::String(i.timestamp().to_string()),
             Value::BigDecimal(d) => r::Value::String(d.to_string()),
             Value::Bool(b) => r::Value::Boolean(b),
             Value::Null => r::Value::Null,

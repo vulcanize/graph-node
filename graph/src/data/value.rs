@@ -350,6 +350,8 @@ impl Value {
             }
             ("Int8", Value::Int(num)) => Ok(Value::String(num.to_string())),
             ("Int8", Value::String(num)) => Ok(Value::String(num)),
+            ("Timestamp", Value::String(ts_string)) => Ok(Value::String(ts_string)),
+            ("Timestamp", Value::Int(ts_int)) => Ok(Value::String(ts_int.to_string())),
             ("String", Value::String(s)) => Ok(Value::String(s)),
             ("ID", Value::String(s)) => Ok(Value::String(s)),
             ("ID", Value::Int(n)) => Ok(Value::String(n.to_string())),

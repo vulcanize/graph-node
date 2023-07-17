@@ -26,6 +26,8 @@ scalar Bytes
 scalar BigInt
 """ 8 bytes signed integer """
 scalar Int8
+""" A representation of UNIX timestamp (8 bytes) """
+scalar Timestamp
 
 # The type names are purposely awkward to minimize the risk of them
 # colliding with user-supplied types

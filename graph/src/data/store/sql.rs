@@ -1,7 +1,8 @@
 use anyhow::anyhow;
+use chrono::NaiveDateTime;
 use diesel::pg::Pg;
 use diesel::serialize::{self, Output, ToSql};
-use diesel::sql_types::{Binary, Bool, Int8, Integer, Text};
+use diesel::sql_types::{Binary, Bool, Int8, Integer, Text, Timestamp};
 
 use std::io::Write;
 use std::str::FromStr;
@@ -40,6 +41,19 @@ impl ToSql<Int8, Pg> for Value {
             Value::Int8(i) => <i64 as ToSql<Int8, Pg>>::to_sql(i, out),
             v => Err(anyhow!(
                 "Failed to convert non-int8 attribute value to int8 in SQL: {}",
+                v
+            )
+            .into()),
+        }
+    }
+}
+
+impl ToSql<NaiveDateTime, Pg> for Value {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        match self {
+            Value::Timestamp(i) => <NaiveDateTime as ToSql<Timestamp, Pg>>::to_sql(i, out),
+            v => Err(anyhow!(
+                "Failed to convert non-timestamp attribute value to timestamp in SQL: {}",
                 v
             )
             .into()),
