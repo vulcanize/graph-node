@@ -1,4 +1,3 @@
-use graph::prelude::chrono::NaiveDateTime;
 use graph::prelude::s::{EnumType, InputValue, ScalarType, Type, TypeDefinition};
 use graph::prelude::{q, r, QueryExecutionError};
 use graph::schema;

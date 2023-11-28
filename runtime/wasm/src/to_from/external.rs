@@ -2,7 +2,6 @@ use ethabi;
 
 use graph::data::store::scalar::Timestamp;
 use graph::data::value::Word;
-use graph::prelude::chrono::NaiveDateTime;
 use graph::prelude::{BigDecimal, BigInt};
 use graph::runtime::gas::GasCounter;
 use graph::runtime::{

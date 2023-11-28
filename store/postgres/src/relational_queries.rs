@@ -20,7 +20,6 @@ use graph::data::store::{Id, IdType, NULL};
 use graph::data::store::{IdList, IdRef, QueryObject};
 use graph::data::value::{Object, Word};
 use graph::data_source::CausalityRegion;
-use graph::prelude::chrono::NaiveDateTime;
 use graph::prelude::{
     anyhow, r, serde_json, Attribute, BlockNumber, ChildMultiplicity, Entity, EntityCollection,
     EntityFilter, EntityLink, EntityOrder, EntityOrderByChild, EntityOrderByChildInfo, EntityRange,
@@ -581,7 +580,6 @@ impl<'a> QueryFragment<Pg> for QueryValue<'a> {
                         .map_err(|e| DieselError::SerializationError(Box::new(e)))?;
                     out.push_bind_param::<Binary, _>(&bytes.as_slice())
                 }
-                ColumnType::Timestamp => out.push_bind_param::<Timestamptz, _>(s),
                 _ => unreachable!(
                     "only string, enum and tsvector columns have values of type string"
                 ),

@@ -8,7 +8,6 @@ use crate::{
 };
 use crate::{data::subgraph::DeploymentHash, prelude::EntityChange};
 use anyhow::{anyhow, Error};
-use chrono::NaiveDateTime;
 use itertools::Itertools;
 use serde::de;
 use serde::{Deserialize, Serialize};
