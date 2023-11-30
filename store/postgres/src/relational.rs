@@ -993,7 +993,7 @@ impl ColumnType {
             ColumnType::Bytes => "bytea",
             ColumnType::Int => "integer",
             ColumnType::Int8 => "int8",
-            ColumnType::Timestamp => "timestamp",
+            ColumnType::Timestamp => "timestamptz",
             ColumnType::String => "text",
             ColumnType::TSVector(_) => "tsvector",
             ColumnType::Enum(enum_type) => enum_type.name.as_str(),

@@ -365,7 +365,11 @@ impl FromColumnValue for r::Value {
     }
 
     fn from_timestamp(i: &str) -> Result<Self, StoreError> {
-        Ok(r::Value::String(i.to_string()))
+        scalar::Timestamp::from_rfc3339(i)
+            .map(|v| r::Value::String(v.as_millis_since_epoch().to_string()))
+            .map_err(|e| {
+                StoreError::Unknown(anyhow!("failed to convert {} to Timestamp: {}", i, e))
+            })
     }
 
     fn from_vec(v: Vec<Self>) -> Self {
@@ -415,7 +419,7 @@ impl FromColumnValue for graph::prelude::Value {
     }
 
     fn from_timestamp(i: &str) -> Result<Self, StoreError> {
-        scalar::Timestamp::from_str(i)
+        scalar::Timestamp::from_rfc3339(i)
             .map(graph::prelude::Value::Timestamp)
             .map_err(|e| {
                 StoreError::Unknown(anyhow!("failed to convert {} to Timestamp: {}", i, e))

@@ -700,7 +700,11 @@ pub struct Timestamp(DateTime<Utc>);
 
 impl Timestamp {
     pub fn timestamp(&self) -> i64 {
-        self.0.timestamp()
+        self.0.timestamp_millis()
+    }
+
+    pub fn from_rfc3339(v: &str) -> Result<Self, chrono::ParseError> {
+        Ok(Timestamp(DateTime::parse_from_rfc3339(v)?.into()))
     }
 
     pub fn from_millisecs_since_epoch(millis: i64) -> Self {
