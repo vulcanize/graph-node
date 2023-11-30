@@ -736,13 +736,15 @@ impl FromStr for Timestamp {
     type Err = chrono::ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Timestamp(DateTime::parse_from_rfc3339(s)?.into()))
+        let numeric_value = s.parse::<i64>().expect("invalid input for timestamp");
+
+        Ok(Timestamp::from_secs_since_epoch(numeric_value))
     }
 }
 
 impl Display for Timestamp {
     fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.0.to_rfc3339())
+        write!(f, "{}", self.0.timestamp())
     }
 }
 

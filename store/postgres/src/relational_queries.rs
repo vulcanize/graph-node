@@ -563,6 +563,15 @@ impl<'a> QueryFragment<Pg> for QueryValue<'a> {
                         )
                     })?)
                 }
+                ColumnType::Timestamp => out.push_bind_param::<Timestamptz, _>(
+                    &s.parse::<scalar::Timestamp>().map_err(|e| {
+                        constraint_violation!(
+                            "failed to convert `{}` to an Timestamp: {}",
+                            s,
+                            e.to_string()
+                        )
+                    })?,
+                ),
                 ColumnType::Enum(enum_type) => {
                     out.push_bind_param::<Text, _>(s)?;
                     out.push_sql("::");
