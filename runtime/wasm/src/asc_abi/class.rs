@@ -466,7 +466,7 @@ impl From<i64> for EnumPayload {
 
 impl From<&Timestamp> for EnumPayload {
     fn from(x: &Timestamp) -> EnumPayload {
-        EnumPayload::from(x.as_secs_since_epoch())
+        EnumPayload::from(x.as_millis_since_epoch())
     }
 }
 

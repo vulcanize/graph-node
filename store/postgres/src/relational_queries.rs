@@ -248,6 +248,8 @@ pub trait FromColumnValue: Sized + std::fmt::Debug {
     // The string returned by the DB, without the leading '\x'
     fn from_bytes(i: &str) -> Result<Self, StoreError>;
 
+    fn from_timestamp(i: &str) -> Result<Self, StoreError>;
+
     fn from_vec(v: Vec<Self>) -> Self;
 
     fn from_column_value(
@@ -299,6 +301,7 @@ pub trait FromColumnValue: Sized + std::fmt::Debug {
                 Ok(Self::from_string(s))
             }
             (j::String(s), ColumnType::Bytes) => Self::from_bytes(s.trim_start_matches("\\x")),
+            (j::String(s), ColumnType::Timestamp) => Self::from_timestamp(&s),
             (j::String(s), column_type) => Err(StoreError::Unknown(anyhow!(
                 "can not convert string {} to {:?}",
                 s,
@@ -361,6 +364,10 @@ impl FromColumnValue for r::Value {
         }
     }
 
+    fn from_timestamp(i: &str) -> Result<Self, StoreError> {
+        Ok(r::Value::String(i.to_string()))
+    }
+
     fn from_vec(v: Vec<Self>) -> Self {
         r::Value::List(v)
     }
@@ -405,6 +412,14 @@ impl FromColumnValue for graph::prelude::Value {
         scalar::Bytes::from_str(b)
             .map(graph::prelude::Value::Bytes)
             .map_err(|e| StoreError::Unknown(anyhow!("failed to convert {} to Bytes: {}", b, e)))
+    }
+
+    fn from_timestamp(i: &str) -> Result<Self, StoreError> {
+        scalar::Timestamp::from_str(i)
+            .map(graph::prelude::Value::Timestamp)
+            .map_err(|e| {
+                StoreError::Unknown(anyhow!("failed to convert {} to Timestamp: {}", i, e))
+            })
     }
 
     fn from_vec(v: Vec<Self>) -> Self {

@@ -260,7 +260,7 @@ impl FromAscObj<AscEnum<StoreValueKind>> for store::Value {
             StoreValueKind::Int => Value::Int(i32::from(payload)),
             StoreValueKind::Int8 => Value::Int8(i64::from(payload)),
             StoreValueKind::Timestamp => {
-                Value::Timestamp(Timestamp::from_secs_since_epoch(i64::from(payload)))
+                Value::Timestamp(Timestamp::from_millisecs_since_epoch(i64::from(payload)))
             }
             StoreValueKind::BigDecimal => {
                 let ptr: AscPtr<AscBigDecimal> = AscPtr::from(payload);

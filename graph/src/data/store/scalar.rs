@@ -703,12 +703,17 @@ impl Timestamp {
         self.0.timestamp()
     }
 
-    pub fn from_secs_since_epoch(secs: i64) -> Self {
-        Timestamp(DateTime::from_timestamp(secs, 0).expect("we can represent all i64s"))
+    pub fn from_millisecs_since_epoch(millis: i64) -> Self {
+        let ts_secs = millis / 1000;
+        let ts_ns = (millis % 1000) * 1_000_000;
+
+        Timestamp(
+            DateTime::from_timestamp(ts_secs, ts_ns as u32).expect("we can represent all i64s"),
+        )
     }
 
-    pub fn as_secs_since_epoch(&self) -> i64 {
-        self.0.timestamp()
+    pub fn as_millis_since_epoch(&self) -> i64 {
+        self.0.timestamp_millis()
     }
 }
 
@@ -738,13 +743,13 @@ impl FromStr for Timestamp {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let numeric_value = s.parse::<i64>().expect("invalid input for timestamp");
 
-        Ok(Timestamp::from_secs_since_epoch(numeric_value))
+        Ok(Timestamp::from_millisecs_since_epoch(numeric_value))
     }
 }
 
 impl Display for Timestamp {
     fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.0.timestamp())
+        write!(f, "{}", self.as_millis_since_epoch())
     }
 }
 
