@@ -23,7 +23,7 @@ use std::time::Duration;
 
 use graph::{
     components::store::AttributeNames,
-    data::store::scalar::{BigDecimal, BigInt, Bytes},
+    data::store::scalar::{BigDecimal, BigInt, Bytes, Timestamp},
 };
 use graph_store_postgres::{
     layout_for_tests::make_dummy_site,
@@ -193,7 +193,7 @@ lazy_static! {
             bool: true,
             int: std::i32::MAX,
             int8: std::i64::MAX,
-            timestamp: "679736164000",
+            timestamp: Value::Timestamp(Timestamp::from_str("679736164000").unwrap()),
             bigDecimal: decimal.clone(),
             bigDecimalArray: vec![decimal.clone(), (decimal + 1.into())],
             string: "scalar",
