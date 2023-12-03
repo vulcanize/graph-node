@@ -52,6 +52,13 @@ impl IntoValue for u64 {
     }
 }
 
+impl IntoValue for i64 {
+    #[inline]
+    fn into_value(self) -> r::Value {
+        r::Value::String(self.to_string())
+    } 
+}
+
 impl<T: IntoValue> IntoValue for Option<T> {
     #[inline]
     fn into_value(self) -> r::Value {
