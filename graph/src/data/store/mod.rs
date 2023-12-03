@@ -352,7 +352,12 @@ impl Value {
                     _ => Value::String(s.clone()),
                 }
             }
-            (r::Value::Int(i), _) => Value::Int(*i as i32),
+            (r::Value::Int(i), NamedType(n)) => match n.as_str() {
+                TIMESTAMP_SCALAR => {
+                    Value::Timestamp(scalar::Timestamp::from_millisecs_since_epoch(*i))
+                }
+                _ => Value::Int(*i as i32),
+            },
             (r::Value::Boolean(b), _) => Value::Bool(b.to_owned()),
             (r::Value::Null, _) => Value::Null,
             _ => {
