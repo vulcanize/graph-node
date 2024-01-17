@@ -1,5 +1,5 @@
 use http::StatusCode;
-use hyper::{Body, Client, Request};
+use hyper_util::client::legacy::Client;
 use std::time::Duration;
 
 use graph::data::{
@@ -82,6 +82,8 @@ impl GraphQlRunner for TestGraphQlRunner {
 #[cfg(test)]
 mod test {
     use http::header::CONTENT_TYPE;
+    use http::Request;
+    use hyper_util::rt::TokioExecutor;
 
     use super::*;
 
@@ -89,46 +91,35 @@ mod test {
         static ref USERS: DeploymentHash = DeploymentHash::new("users").unwrap();
     }
 
-    #[test]
-    fn rejects_empty_json() {
-        let runtime = tokio::runtime::Runtime::new().unwrap();
-        runtime
-            .block_on(async {
-                let logger = Logger::root(slog::Discard, o!());
-                let logger_factory = LoggerFactory::new(logger, None, Arc::new(MetricsRegistry::mock()));
-                let id = USERS.clone();
-                let query_runner = Arc::new(TestGraphQlRunner);
-                let node_id = NodeId::new("test").unwrap();
-                let mut server = HyperGraphQLServer::new(&logger_factory, query_runner, node_id);
-                let http_server = server
-                    .serve(8007, 8008)
-                    .expect("Failed to start GraphQL server");
+    #[tokio::test]
+    async fn rejects_empty_json() {
+        let logger = Logger::root(slog::Discard, o!());
+        let logger_factory = LoggerFactory::new(logger, None, Arc::new(MetricsRegistry::mock()));
+        let id = USERS.clone();
+        let query_runner = Arc::new(TestGraphQlRunner);
+        let node_id = NodeId::new("test").unwrap();
+        let mut server = HyperGraphQLServer::new(&logger_factory, query_runner, node_id);
+        let http_server = server.serve(8007, 8008);
 
-                // Launch the server to handle a single request
-                tokio::spawn(http_server.fuse().compat());
-                // Give some time for the server to start.
-                sleep(Duration::from_secs(2))
-                    .then(move |()| {
-                        // Send an empty JSON POST request
-                        let client = Client::new();
-                        let request =
-                            Request::post(format!("http://localhost:8007/subgraphs/id/{}", id)).header(CONTENT_TYPE, "text/plain")
-                                .body(Body::from("{}"))
-                                .unwrap();
+        // Launch the server to handle a single request
+        tokio::spawn(async move { http_server.await });
+        // Give some time for the server to start.
+        tokio::time::sleep(Duration::from_secs(2)).await;
 
-                        // The response must be a query error
-                        client.request(request)
-                    })
-                    .map_ok(|response| {
-                        let errors =
-                            test_utils::assert_error_response(response, StatusCode::BAD_REQUEST, false);
+        // Send an empty JSON POST request
+        let client = Client::builder(TokioExecutor::new()).build_http();
+        let request = Request::post(format!("http://localhost:8007/subgraphs/id/{}", id))
+            .header(CONTENT_TYPE, "text/plain")
+            .body("{}".to_string())
+            .unwrap();
 
-                        let message = errors[0]
-                            .as_str()
-                            .expect("Error message is not a string");
-                        assert_eq!(message, "{\"error\":\"GraphQL server error (client error): The \\\"query\\\" field is missing in request data\"}");
-                    }).await.unwrap()
-            })
+        // The response must be a query error
+        let rsp = client.request(request).await.unwrap();
+
+        let errors = test_utils::assert_error_response(rsp, StatusCode::BAD_REQUEST, false);
+
+        let message = errors[0].as_str().expect("Error message is not a string");
+        assert_eq!(message, "{\"error\":\"GraphQL server error (client error): The \\\"query\\\" field is missing in request data\"}");
     }
 
     #[test]
@@ -142,12 +133,10 @@ mod test {
             let query_runner = Arc::new(TestGraphQlRunner);
             let node_id = NodeId::new("test").unwrap();
             let mut server = HyperGraphQLServer::new(&logger_factory, query_runner, node_id);
-            let http_server = server
-                .serve(8002, 8003)
-                .expect("Failed to start GraphQL server");
+            let http_server = server.serve(8002, 8003);
 
             // Launch the server to handle a single request
-            tokio::spawn(http_server.fuse().compat());
+            tokio::spawn(async move { http_server.await });
             // Give some time for the server to start.
             sleep(Duration::from_secs(2))
                 .then(move |()| {
@@ -156,7 +145,7 @@ mod test {
                     let request =
                         Request::post(format!("http://localhost:8002/subgraphs/id/{}", id))
                             .header(CONTENT_TYPE, "text/plain")
-                            .body(Body::from("{\"query\": \"<L<G<>M>\"}"))
+                            .body("{\"query\": \"<L<G<>M>\"}".to_string())
                             .unwrap();
 
                     // The response must be a query error
@@ -224,12 +213,10 @@ mod test {
             let query_runner = Arc::new(TestGraphQlRunner);
             let node_id = NodeId::new("test").unwrap();
             let mut server = HyperGraphQLServer::new(&logger_factory, query_runner, node_id);
-            let http_server = server
-                .serve(8003, 8004)
-                .expect("Failed to start GraphQL server");
+            let http_server = server.serve(8003, 8004);
 
             // Launch the server to handle a single request
-            tokio::spawn(http_server.fuse().compat());
+            tokio::spawn(async move { http_server.await });
             // Give some time for the server to start.
             sleep(Duration::from_secs(2))
                 .then(move |()| {
@@ -238,7 +225,7 @@ mod test {
                     let request =
                         Request::post(format!("http://localhost:8003/subgraphs/id/{}", id))
                             .header(CONTENT_TYPE, "plain/text")
-                            .body(Body::from("{\"query\": \"{ name }\"}"))
+                            .body("{\"query\": \"{ name }\"}")
                             .unwrap();
 
                     // The response must be a 200
@@ -271,12 +258,10 @@ mod test {
             let query_runner = Arc::new(TestGraphQlRunner);
             let node_id = NodeId::new("test").unwrap();
             let mut server = HyperGraphQLServer::new(&logger_factory, query_runner, node_id);
-            let http_server = server
-                .serve(8005, 8006)
-                .expect("Failed to start GraphQL server");
+            let http_server = server.serve(8005, 8006);
 
             // Launch the server to handle a single request
-            tokio::spawn(http_server.fuse().compat());
+            tokio::spawn(async move { http_server.await });
             // Give some time for the server to start.
             sleep(Duration::from_secs(2))
                 .then(move |()| {
@@ -284,7 +269,7 @@ mod test {
                     let client = Client::new();
                     let request =
                         Request::post(format!("http://localhost:8005/subgraphs/id/{}", id))
-                            .body(Body::from(
+                            .body(
                                 "
                             {
                               \"query\": \" \
@@ -295,7 +280,7 @@ mod test {
                               \"variables\": { \"equals\": \"John\" }
                             }
                             ",
-                            ))
+                            )
                             .unwrap();
 
                     // The response must be a 200

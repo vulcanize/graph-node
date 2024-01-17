@@ -2366,6 +2366,8 @@ dependencies = [
  "pin-project-lite",
  "socket2 0.5.5",
  "tokio",
+ "tower 0.4.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tower-service 0.3.1",
  "tracing",
 ]
 
@@ -5110,6 +5112,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2fce9567bd60a67d08a16488756721ba392f24f29006402881e43b19aac64307"
 dependencies = [
  "cfg-if 1.0.0",
+ "log",
  "pin-project-lite",
  "tracing-attributes",
  "tracing-core",

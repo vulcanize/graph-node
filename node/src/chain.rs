@@ -16,6 +16,7 @@ use graph::util::futures::retry;
 use graph::util::security::SafeDisplay;
 use graph_chain_ethereum::{self as ethereum, EthereumAdapterTrait, Transport};
 use std::collections::{btree_map, BTreeMap};
+use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -505,7 +506,14 @@ pub async fn create_ethereum_networks_for_chain(
                 .into_iter()
                 // The API is designed in a way that some headers may contain non printable ASCII
                 // characters, to my knowledge this is not used in the Graph Node.
-                .flat_map(|(key, value)| key.map(|k| (k.to_string(), value))),
+                .flat_map(|(key, value)| {
+                    key.map(|k| {
+                        (
+                            http02::HeaderName::from_str(k.as_str()).unwrap(),
+                            value.to_str().unwrap().parse().unwrap(),
+                        )
+                    })
+                }),
         );
 
         let transport = match web3.transport {

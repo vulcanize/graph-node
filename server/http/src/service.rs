@@ -479,18 +479,18 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::service::Service;
     use graph::data::value::{Object, Word};
     use graph::prelude::serde_json::json;
     use http::header::{CONTENT_LENGTH, CONTENT_TYPE};
     use http::status::StatusCode;
-    use http_body_util::{BodyExt, Full};
-    use hyper::body::Incoming;
+    use http_body_util::BodyExt;
+
     use hyper::{Method, Request};
 
     use graph::data::query::{QueryResults, QueryTarget};
-    use graph::prelude::*;
-    use hyper_util::rt::TokioIo;
+    use graph::prelude::{GraphQLServer, *};
+    use hyper_util::client::legacy::Client;
+    use hyper_util::rt::TokioExecutor;
 
     use crate::test_utils;
 
@@ -558,11 +558,11 @@ mod tests {
             .method(Method::GET)
             .header(CONTENT_TYPE, "text/plain; charset=utf-8")
             .uri("http://localhost:8000/not_found_route".to_string())
-            .body(Full::new(hyper::body::Bytes::from("{}")))
+            .body("{}".to_string())
             .unwrap();
 
-        let response =
-            futures03::executor::block_on(service.call(request)).expect("Should return a response");
+        let response = futures03::executor::block_on(service.handle_call(request))
+            .expect("Should return a response");
 
         let content_type_header = response.status();
         assert_eq!(content_type_header, StatusCode::OK);
@@ -579,14 +579,13 @@ mod tests {
         assert_eq!(json.unwrap(), serde_json::json!({"message": "Not found"}));
     }
 
-    #[test]
-    fn posting_invalid_query_yields_error_response() {
+    #[tokio::test]
+    async fn posting_invalid_query_yields_error_response() {
         let logger = Logger::root(slog::Discard, o!());
         let subgraph_id = USERS.clone();
         let graphql_runner = Arc::new(TestGraphQlRunner);
-
         let node_id = NodeId::new("test").unwrap();
-        let mut service = GraphQLService::new(logger, graphql_runner, 8001, node_id);
+        let service = GraphQLService::new(logger, graphql_runner, 8001, node_id);
 
         let request = Request::builder()
             .method(Method::POST)
@@ -596,12 +595,20 @@ mod tests {
                 "http://localhost:8000/subgraphs/id/{}",
                 subgraph_id
             ))
-            .body(String::from("{}"))
+            .body("{}".to_string())
             .unwrap();
 
-        let response =
-            futures03::executor::block_on(service.call(request)).expect("Should return a response");
-        let errors = test_utils::assert_error_response(response, StatusCode::BAD_REQUEST, false);
+        let (parts, body) = service
+            .handle_call(request)
+            .await
+            .expect("Should return a response")
+            .into_parts();
+
+        let body = body.collect().await.unwrap().to_bytes();
+        let body = String::from_utf8(body.to_vec()).unwrap();
+
+        let errors =
+            test_utils::assert_error_response(parts, body, StatusCode::BAD_REQUEST, false).await;
 
         let message = errors[0].as_str().expect("Error message is not a string");
 
@@ -619,7 +626,7 @@ mod tests {
         let graphql_runner = Arc::new(TestGraphQlRunner);
 
         let node_id = NodeId::new("test").unwrap();
-        let mut service = GraphQLService::new(logger, graphql_runner, 8001, node_id);
+        let service = GraphQLService::new(logger, graphql_runner, 8001, node_id);
 
         let request = Request::builder()
             .method(Method::POST)
@@ -629,16 +636,17 @@ mod tests {
                 "http://localhost:8000/subgraphs/id/{}",
                 subgraph_id
             ))
-            .body(String::from("{\"query\": \"{ name }\"}"))
+            .body("{\"query\": \"{ name }\"}".to_string())
             .unwrap();
 
         // The response must be a 200
-        let response = tokio::spawn(service.call(request))
+        let response = service
+            .handle_call(request)
             .await
-            .unwrap()
             .expect("Should return a response");
+        let (parts, body) = response.into_parts();
 
-        let data = test_utils::assert_successful_response(response);
+        let data = test_utils::assert_successful_response_string(&parts.headers, body).await;
 
         // The body should match the simulated query result
         let name = data

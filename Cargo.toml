@@ -29,7 +29,7 @@ tonic-build = { version = "0.9.2", features = ["prost"] }
 hyper = { version = "1.1", features = ["client"] }
 http = { version = "1" }
 http02 = { version = "0", package = "http" } 
-hyper-util = { version ="0.1.2", features = ["server", "server-auto", "tokio"] }
+hyper-util = { version ="0.1.2", features = ["server", "server-auto", "tokio", "client-legacy"] }
 
 # Incremental compilation on Rust 1.58 causes an ICE on build. As soon as graph node builds again, these can be removed.
 [profile.test]
