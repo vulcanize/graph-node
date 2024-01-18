@@ -1844,6 +1844,7 @@ dependencies = [
  "graph-chain-ethereum",
  "graph-core",
  "graph-runtime-derive",
+ "graph-runtime-wasm",
  "rand",
  "semver",
  "test-store",
