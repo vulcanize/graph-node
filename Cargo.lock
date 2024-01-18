@@ -229,7 +229,7 @@ checksum = "a66537f1bb974b254c98ed142ff995236e81b9d0fe4db0575f46612cb15eb0f9"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.32",
+ "syn 2.0.48",
 ]
 
 [[package]]
@@ -1551,7 +1551,6 @@ dependencies = [
  "async-trait",
  "atomic_refcell",
  "bigdecimal 0.1.2",
- "bs58",
  "bytes",
  "chrono",
  "cid",
@@ -1563,7 +1562,6 @@ dependencies = [
  "ethabi",
  "futures 0.1.31",
  "futures 0.3.16",
- "graph-runtime-derive",
  "graphql-parser",
  "hex",
  "hex-literal 0.4.1",
@@ -1574,7 +1572,6 @@ dependencies = [
  "lazy_static",
  "lru_time_cache",
  "maplit",
- "never",
  "num-bigint 0.2.6",
  "num-traits",
  "num_cpus",
@@ -1612,10 +1609,7 @@ dependencies = [
  "tonic",
  "tonic-build",
  "url",
- "uuid",
- "wasm-instrument",
  "wasmparser 0.118.1",
- "wasmtime",
  "web3",
 ]
 
@@ -1627,6 +1621,7 @@ dependencies = [
  "diesel",
  "graph",
  "graph-runtime-derive",
+ "graph-runtime-wasm",
  "prost",
  "prost-types",
  "serde",
@@ -1652,6 +1647,7 @@ dependencies = [
  "graph",
  "graph-chain-common",
  "graph-runtime-derive",
+ "graph-runtime-wasm",
  "prost",
  "prost-types",
  "semver",
@@ -1670,6 +1666,7 @@ dependencies = [
  "futures 0.1.31",
  "graph",
  "graph-runtime-derive",
+ "graph-runtime-wasm",
  "hex",
  "http",
  "itertools 0.12.0",
@@ -1693,6 +1690,7 @@ dependencies = [
  "diesel",
  "graph",
  "graph-runtime-derive",
+ "graph-runtime-wasm",
  "prost",
  "prost-types",
  "serde",
@@ -1706,6 +1704,7 @@ version = "0.33.0"
 dependencies = [
  "graph",
  "graph-runtime-derive",
+ "graph-runtime-wasm",
  "hex",
  "prost",
  "prost-types",
@@ -1726,6 +1725,7 @@ dependencies = [
  "envconfig",
  "futures 0.1.31",
  "graph",
+ "graph-runtime-wasm",
  "hex",
  "http",
  "itertools 0.12.0",
@@ -1759,6 +1759,7 @@ dependencies = [
  "graph-chain-near",
  "graph-chain-starknet",
  "graph-chain-substreams",
+ "graph-runtime-wasm",
  "ipfs-api",
  "ipfs-api-backend-hyper",
  "lazy_static",
@@ -1846,6 +1847,32 @@ dependencies = [
  "rand",
  "semver",
  "test-store",
+ "wasmtime",
+]
+
+[[package]]
+name = "graph-runtime-wasm"
+version = "0.33.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "atomic_refcell",
+ "bs58",
+ "bytes",
+ "defer",
+ "ethabi",
+ "futures 0.1.31",
+ "graph",
+ "graph-runtime-derive",
+ "hex",
+ "lazy_static",
+ "never",
+ "parity-wasm",
+ "semver",
+ "strum",
+ "strum_macros",
+ "uuid",
+ "wasm-instrument",
  "wasmtime",
 ]
 
@@ -1968,6 +1995,7 @@ dependencies = [
  "graph-core",
  "graph-graphql",
  "graph-node",
+ "graph-runtime-wasm",
  "graph-server-index-node",
  "graph-store-postgres",
  "graphql-parser",
@@ -4531,7 +4559,7 @@ checksum = "266b2e40bc00e5a6c09c3584011e08b06f123c00362c92b975ba9843aaaa14b8"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.32",
+ "syn 2.0.48",
 ]
 
 [[package]]
@@ -5423,7 +5451,7 @@ dependencies = [
  "anyhow",
  "proc-macro2",
  "quote",
- "syn 2.0.32",
+ "syn 2.0.48",
  "wasmtime-component-util",
  "wasmtime-wit-bindgen",
  "wit-parser",
@@ -5611,7 +5639,7 @@ checksum = "f50f51f8d79bfd2aa8e9d9a0ae7c2d02b45fe412e62ff1b87c0c81b07c738231"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.32",
+ "syn 2.0.48",
 ]
 
 [[package]]
@@ -6076,7 +6104,7 @@ checksum = "dd7e48ccf166952882ca8bd778a43502c64f33bf94c12ebe2a7f08e5a0f6689f"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.32",
+ "syn 2.0.48",
 ]
 
 [[package]]
