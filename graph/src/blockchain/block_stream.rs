@@ -26,7 +26,7 @@ pub const FIREHOSE_BUFFER_STREAM_SIZE: usize = 1;
 pub const SUBSTREAMS_BUFFER_STREAM_SIZE: usize = 1;
 
 pub struct BufferedBlockStream<C: Blockchain> {
-    inner: Pin<Box<dyn Stream<Item = Result<BlockStreamEvent<C>, Error>> + Send>>,
+    inner: Pin<Box<dyn Stream<Item = Result<BlockStreamEvent<C>, BlockStreamError>> + Send>>,
 }
 
 impl<C: Blockchain + 'static> BufferedBlockStream<C> {
@@ -34,13 +34,14 @@ impl<C: Blockchain + 'static> BufferedBlockStream<C> {
         size_hint: usize,
         stream: Box<dyn BlockStream<C>>,
     ) -> Box<dyn BlockStream<C>> {
-        let (sender, receiver) = mpsc::channel::<Result<BlockStreamEvent<C>, Error>>(size_hint);
+        let (sender, receiver) =
+            mpsc::channel::<Result<BlockStreamEvent<C>, BlockStreamError>>(size_hint);
         crate::spawn(async move { BufferedBlockStream::stream_blocks(stream, sender).await });
 
         Box::new(BufferedBlockStream::new(receiver))
     }
 
-    pub fn new(mut receiver: Receiver<Result<BlockStreamEvent<C>, Error>>) -> Self {
+    pub fn new(mut receiver: Receiver<Result<BlockStreamEvent<C>, BlockStreamError>>) -> Self {
         let inner = stream! {
             loop {
                 let event = match receiver.recv().await {
@@ -59,7 +60,7 @@ impl<C: Blockchain + 'static> BufferedBlockStream<C> {
 
     pub async fn stream_blocks(
         mut stream: Box<dyn BlockStream<C>>,
-        sender: Sender<Result<BlockStreamEvent<C>, Error>>,
+        sender: Sender<Result<BlockStreamEvent<C>, BlockStreamError>>,
     ) -> Result<(), Error> {
         while let Some(event) = stream.next().await {
             match sender.send(event).await {
@@ -84,7 +85,7 @@ impl<C: Blockchain> BlockStream<C> for BufferedBlockStream<C> {
 }
 
 impl<C: Blockchain> Stream for BufferedBlockStream<C> {
-    type Item = Result<BlockStreamEvent<C>, Error>;
+    type Item = Result<BlockStreamEvent<C>, BlockStreamError>;
 
     fn poll_next(
         mut self: Pin<&mut Self>,
@@ -95,7 +96,7 @@ impl<C: Blockchain> Stream for BufferedBlockStream<C> {
 }
 
 pub trait BlockStream<C: Blockchain>:
-    Stream<Item = Result<BlockStreamEvent<C>, Error>> + Unpin + Send
+    Stream<Item = Result<BlockStreamEvent<C>, BlockStreamError>> + Unpin + Send
 {
     fn buffer_size_hint(&self) -> usize;
 }
@@ -408,6 +409,10 @@ pub trait BlockStreamMapper<C: Blockchain>: Send + Sync {
                     None => return Err(SubstreamsError::MissingClockError),
                 };
 
+                if clock.number > 11808300 {
+                    panic!("end block")
+                }
+
                 let value = match module_output.map_output {
                     Some(Any { type_url: _, value }) => value,
                     None => return Ok(None),
@@ -480,6 +485,20 @@ pub enum SubstreamsError {
 
     #[error("unexpected store delta output")]
     UnexpectedStoreDeltaOutput,
+}
+
+#[derive(Debug, Error)]
+pub enum BlockStreamError {
+    #[error("block stream error")]
+    Unknown(#[from] anyhow::Error),
+    #[error("block stream fatal error")]
+    Fatal(String),
+}
+
+impl BlockStreamError {
+    pub fn is_deterministic(&self) -> bool {
+        matches!(self, Self::Fatal(_))
+    }
 }
 
 #[derive(Debug)]
@@ -576,7 +595,6 @@ pub trait ChainHeadUpdateListener: Send + Sync + 'static {
 mod test {
     use std::{collections::HashSet, task::Poll};
 
-    use anyhow::Error;
     use futures03::{Stream, StreamExt, TryStreamExt};
 
     use crate::{
@@ -585,7 +603,8 @@ mod test {
     };
 
     use super::{
-        BlockStream, BlockStreamEvent, BlockWithTriggers, BufferedBlockStream, FirehoseCursor,
+        BlockStream, BlockStreamError, BlockStreamEvent, BlockWithTriggers, BufferedBlockStream,
+        FirehoseCursor,
     };
 
     #[derive(Debug)]
@@ -600,7 +619,7 @@ mod test {
     }
 
     impl Stream for TestStream {
-        type Item = Result<BlockStreamEvent<MockBlockchain>, Error>;
+        type Item = Result<BlockStreamEvent<MockBlockchain>, BlockStreamError>;
 
         fn poll_next(
             mut self: std::pin::Pin<&mut Self>,
