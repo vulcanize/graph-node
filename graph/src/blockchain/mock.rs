@@ -1,10 +1,12 @@
+// Portions copyright (2023) Vulcanize, Inc.
+
 use crate::{
     components::{
         link_resolver::LinkResolver,
         store::{BlockNumber, DeploymentCursorTracker, DeploymentLocator},
     },
     data::subgraph::UnifiedMappingApiVersion,
-    prelude::DataSourceTemplateInfo,
+    prelude::{BlockHash, DataSourceTemplateInfo},
 };
 use anyhow::Error;
 use async_trait::async_trait;
@@ -204,6 +206,7 @@ impl<C: Blockchain> TriggersAdapter<C> for MockTriggersAdapter {
         &self,
         _ptr: BlockPtr,
         _offset: BlockNumber,
+        _root: Option<BlockHash>,
     ) -> Result<Option<C::Block>, Error> {
         todo!()
     }
@@ -213,7 +216,7 @@ impl<C: Blockchain> TriggersAdapter<C> for MockTriggersAdapter {
         _from: crate::components::store::BlockNumber,
         _to: crate::components::store::BlockNumber,
         _filter: &C::TriggerFilter,
-    ) -> Result<Vec<block_stream::BlockWithTriggers<C>>, Error> {
+    ) -> Result<(Vec<block_stream::BlockWithTriggers<C>>, BlockNumber), Error> {
         todo!()
     }
 

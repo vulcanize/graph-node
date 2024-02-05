@@ -1,3 +1,5 @@
+// Portions copyright (2023) Vulcanize, Inc.
+
 //! Test ChainStore implementation of Store, in particular, how
 //! the chain head pointer gets updated in various situations
 
@@ -40,8 +42,12 @@ where
             let chain_store = store.block_store().chain_store(name).expect("chain store");
 
             // Run test
-            test(chain_store.cheap_clone(), store.cheap_clone())
-                .unwrap_or_else(|_| panic!("test finishes successfully on network {}", name));
+            test(chain_store.cheap_clone(), store.cheap_clone()).unwrap_or_else(|err| {
+                panic!(
+                    "test finishes successfully on network {} with error {}",
+                    name, err
+                )
+            });
         }
     });
 }
@@ -293,11 +299,11 @@ fn check_ancestor(
     offset: BlockNumber,
     exp: &FakeBlock,
 ) -> Result<(), Error> {
-    let act = executor::block_on(
-        store
-            .cheap_clone()
-            .ancestor_block(child.block_ptr(), offset),
-    )?
+    let act = executor::block_on(store.cheap_clone().ancestor_block(
+        child.block_ptr(),
+        offset,
+        None,
+    ))?
     .map(json::from_value::<EthereumBlock>)
     .transpose()?
     .ok_or_else(|| anyhow!("block {} has no ancestor at offset {}", child.hash, offset))?;
@@ -336,15 +342,16 @@ fn ancestor_block_simple() {
 
         for offset in [6, 7, 8, 50].iter() {
             let offset = *offset;
-            let res = executor::block_on(
-                store
-                    .cheap_clone()
-                    .ancestor_block(BLOCK_FIVE.block_ptr(), offset),
-            );
+            let res = executor::block_on(store.cheap_clone().ancestor_block(
+                BLOCK_FIVE.block_ptr(),
+                offset,
+                None,
+            ));
             assert!(res.is_err());
         }
 
-        let block = executor::block_on(store.ancestor_block(BLOCK_TWO_NO_PARENT.block_ptr(), 1))?;
+        let block =
+            executor::block_on(store.ancestor_block(BLOCK_TWO_NO_PARENT.block_ptr(), 1, None))?;
         assert!(block.is_none());
         Ok(())
     });
